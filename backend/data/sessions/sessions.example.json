@@ -1,0 +1,26 @@
+{
+  "sessions": [
+    {
+      "id": "example-session-1",
+      "title": "Example Chat Session",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Hello, this is an example message",
+          "timestamp": "2024-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "msg-2",
+          "role": "assistant",
+          "content": "Hello! This is an example response from the AI.",
+          "timestamp": "2024-01-01T00:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

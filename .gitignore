@@ -1,0 +1,122 @@
+# ===== Global ignores =====
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint/stylelint cache
+.eslintcache
+.stylelintcache
+
+# REPL history
+.node_repl_history
+
+# Coverage reports
+coverage/
+
+# Temporary folders
+tmp/
+temp/
+
+# SSL keys
+*.pem
+
+# ===== macOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.apdisk
+
+# ===== Windows =====
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+$RECYCLE.BIN/
+Desktop.ini
+
+# ===== Frontend (Next.js + React) =====
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+frontend/build/
+frontend/.vercel
+frontend/.next/cache
+
+# Frontend environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# ===== Backend (Node.js or Python) =====
+backend/node_modules/
+backend/dist/
+backend/build/
+
+# Python cache
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.Python
+backend/env/
+backend/venv/
+backend/.venv/
+backend/ENV/
+backend/env.bak/
+backend/venv.bak/
+
+# Backend environment files
+backend/.env
+backend/.env.local
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+
+# Python specific caches and tooling
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.hypothesis/
+backend/.tox/
+backend/.coverage
+backend/.coverage.*
+backend/.cache
+backend/.pdm.toml
+
+# ===== Deployment =====
+.netlify
+.vercel
+

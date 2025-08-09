@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Browser Connection Test</title>
+</head>
+<body>
+    <h1>Browser Connection Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message) {
+            console.log(message);
+            results.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        async function testConnection() {
+            log('Testing connection to backend...');
+            
+            try {
+                // Test 1: Health check
+                log('1. Testing health endpoint...');
+                const healthResponse = await fetch('http://localhost:3001/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+                
+                if (healthResponse.ok) {
+                    const healthData = await healthResponse.text();
+                    log('✅ Health check passed: ' + healthData);
+                } else {
+                    log('❌ Health check failed: ' + healthResponse.status);
+                }
+                
+                // Test 2: Sessions endpoint (the one that's failing)
+                log('2. Testing sessions endpoint...');
+                const sessionsResponse = await fetch('http://localhost:3001/api/sessions', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+                
+                if (sessionsResponse.ok) {
+                    const sessionsData = await sessionsResponse.json();
+                    log('✅ Sessions check passed: ' + JSON.stringify(sessionsData).substring(0, 100) + '...');
+                } else {
+                    log('❌ Sessions check failed: ' + sessionsResponse.status);
+                }
+                
+            } catch (error) {
+                log('❌ Connection failed: ' + error.message);
+                log('Error details: ' + JSON.stringify(error));
+            }
+        }
+        
+        // Run test when page loads
+        testConnection();
+    </script>
+</body>
+</html>
