@@ -54,11 +54,11 @@
     "components/**/*",
     "lib/**/*",
     "services/**/*",
-    "config/**/*"
+    "config/**/*",
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "src/**/*",
     "backend/**/*",
     "dist/**/*"
   ]

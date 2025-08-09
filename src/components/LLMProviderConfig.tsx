@@ -1,503 +1,614 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import { useSettingsStore } from '@/store/settingsStore';
-import { getApiKeyStatus, truncateUrl } from '@/utils';
-import type { LLMProvider, LLMProviderConfig as LLMProviderConfigType, ModelInfo } from '@/types';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { LLMProviderConfig as LLMProvider, ModelInfo } from '../../lib/types';
 
 interface LLMProviderConfigProps {
-  className?: string;
+  language?: 'en' | 'zh';
 }
 
-// Default models for each provider with tool calling support information
-const DEFAULT_MODELS: Record<LLMProvider, ModelInfo[]> = {
-  openai: [
-    { id: 'gpt-4o', name: 'GPT-4o', supportsToolCalling: true, maxTokens: 128000 },
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', supportsToolCalling: true, maxTokens: 128000 },
-    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', supportsToolCalling: true, maxTokens: 128000 },
-    { id: 'gpt-4', name: 'GPT-4', supportsToolCalling: true, maxTokens: 8192 },
-    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', supportsToolCalling: true, maxTokens: 16385 },
-  ],
-  deepseek: [
-    { id: 'deepseek-chat', name: 'DeepSeek Chat', supportsToolCalling: true, maxTokens: 32768 },
-    { id: 'deepseek-coder', name: 'DeepSeek Coder', supportsToolCalling: true, maxTokens: 16384 },
-  ],
-  openrouter: [
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', supportsToolCalling: true, maxTokens: 200000 },
-    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', supportsToolCalling: true, maxTokens: 200000 },
-    { id: 'openai/gpt-4o', name: 'GPT-4o (OpenRouter)', supportsToolCalling: true, maxTokens: 128000 },
-    { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', supportsToolCalling: true, maxTokens: 2000000 },
-  ],
-};
+interface ProviderStatus {
+  id: string;
+  status: 'connected' | 'disconnected' | 'error' | 'testing' | 'disabled';
+  error?: string;
+  models?: ModelInfo[];
+  lastTested?: string;
+}
 
-// Default base URLs for each provider
-const DEFAULT_BASE_URLS: Record<LLMProvider, string> = {
-  openai: 'https://api.openai.com/v1',
-  deepseek: 'https://api.deepseek.com/v1',
-  openrouter: 'https://openrouter.ai/api/v1',
-};
+interface TestConnectionResult {
+  success: boolean;
+  error?: string;
+  models?: Array<{
+    id: string;
+    name: string;
+    supportsToolCalling: boolean;
+  }>;
+  latency?: number;
+  timestamp: string;
+}
 
-const LLMProviderConfig: React.FC<LLMProviderConfigProps> = ({ className = '' }) => {
-  const { t } = useTranslation();
-  const {
-    llmProviders,
-    addLLMProvider,
-    updateLLMProvider,
-    removeLLMProvider,
-    toggleLLMProvider,
-    testLLMConnection,
-  } = useSettingsStore();
-
-  // Form state for adding/editing providers
-  const [isAddingProvider, setIsAddingProvider] = useState(false);
-  const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: 'openai' as LLMProvider,
-    apiKey: '',
-    baseUrl: '',
-    models: [] as ModelInfo[],
+export default function LLMProviderConfig({ language = 'en' }: LLMProviderConfigProps) {
+  const [providers, setProviders] = useState<LLMProvider[]>([]);
+  const [providerStatuses, setProviderStatuses] = useState<Record<string, ProviderStatus>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [newProvider, setNewProvider] = useState<Partial<LLMProvider>>({
+    name: 'openai',
     enabled: true,
+    models: []
   });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [testingConnections, setTestingConnections] = useState<Set<string>>(new Set());
-  const [connectionResults, setConnectionResults] = useState<Record<string, { success: boolean; error?: string; timestamp: number }>>({});
-  
-  // Note: API key testing is now handled by the backend
 
-  // Reset form when adding new provider
-  const handleAddProvider = () => {
-    setFormData({
-      name: 'openai',
-      apiKey: '',
-      baseUrl: DEFAULT_BASE_URLS.openai,
-      models: DEFAULT_MODELS.openai,
-      enabled: true,
-    });
-    setFormErrors({});
-    setIsAddingProvider(true);
-    setEditingProviderId(null);
+  // Localized text
+  const text = language === 'zh' ? {
+    title: 'LLM 提供商管理',
+    addProvider: '添加提供商',
+    providerName: '提供商名称',
+    apiKey: 'API 密钥',
+    baseUrl: '基础 URL',
+    enabled: '启用',
+    disabled: '禁用',
+    connected: '已连接',
+    disconnected: '未连接',
+    error: '错误',
+    testing: '测试中',
+    testConnection: '测试连接',
+    save: '保存',
+    cancel: '取消',
+    edit: '编辑',
+    delete: '删除',
+    enable: '启用',
+    disable: '禁用',
+    status: '状态',
+    models: '模型',
+    lastTested: '最后测试',
+    noModels: '无可用模型',
+    toolCalling: '支持工具调用',
+    maxTokens: '最大令牌数',
+    loading: '加载中...',
+    saving: '保存中...',
+    testingConnection: '测试连接中...',
+    connectionSuccess: '连接成功',
+    connectionFailed: '连接失败',
+    providerAdded: '提供商已添加',
+    providerUpdated: '提供商已更新',
+    providerDeleted: '提供商已删除',
+    confirmDelete: '确定要删除此提供商吗？',
+    apiKeyPlaceholder: '输入 API 密钥',
+    baseUrlPlaceholder: '可选，留空使用默认值',
+    selectProvider: '选择提供商类型',
+    openai: 'OpenAI',
+    deepseek: 'DeepSeek',
+    openrouter: 'OpenRouter',
+    note: '注意：API 密钥将安全加密存储在服务器上，从不暴露给客户端。',
+    maskedKey: '密钥已加密存储',
+    enterNewKey: '输入新密钥以更新',
+    keepExisting: '保持现有密钥'
+  } : {
+    title: 'LLM Provider Management',
+    addProvider: 'Add Provider',
+    providerName: 'Provider Name',
+    apiKey: 'API Key',
+    baseUrl: 'Base URL',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    error: 'Error',
+    testing: 'Testing',
+    testConnection: 'Test Connection',
+    save: 'Save',
+    cancel: 'Cancel',
+    edit: 'Edit',
+    delete: 'Delete',
+    enable: 'Enable',
+    disable: 'Disable',
+    status: 'Status',
+    models: 'Models',
+    lastTested: 'Last Tested',
+    noModels: 'No models available',
+    toolCalling: 'Supports Tool Calling',
+    maxTokens: 'Max Tokens',
+    loading: 'Loading...',
+    saving: 'Saving...',
+    testingConnection: 'Testing connection...',
+    connectionSuccess: 'Connection successful',
+    connectionFailed: 'Connection failed',
+    providerAdded: 'Provider added',
+    providerUpdated: 'Provider updated',
+    providerDeleted: 'Provider deleted',
+    confirmDelete: 'Are you sure you want to delete this provider?',
+    apiKeyPlaceholder: 'Enter API key',
+    baseUrlPlaceholder: 'Optional, leave empty for default',
+    selectProvider: 'Select provider type',
+    openai: 'OpenAI',
+    deepseek: 'DeepSeek',
+    openrouter: 'OpenRouter',
+    note: 'Note: API keys are securely encrypted and stored on the server, never exposed to the client.',
+    maskedKey: 'Key is encrypted and stored',
+    enterNewKey: 'Enter new key to update',
+    keepExisting: 'Keep existing key'
   };
 
-  // Edit existing provider
-  const handleEditProvider = (provider: LLMProviderConfigType) => {
-    setFormData({
-      name: provider.name,
-      // If API key is masked, show empty field for user to enter new key
-      apiKey: provider.apiKey && provider.apiKey.includes('*') ? '' : provider.apiKey,
-      baseUrl: provider.baseUrl || DEFAULT_BASE_URLS[provider.name],
-      models: provider.models.length > 0 ? provider.models : DEFAULT_MODELS[provider.name],
-      enabled: provider.enabled,
-    });
-    setFormErrors({});
-    setIsAddingProvider(false);
-    setEditingProviderId(provider.id);
-  };
+  // Load providers on component mount
+  useEffect(() => {
+    loadProviders();
+  }, []);
 
-  // Cancel form
-  const handleCancelForm = () => {
-    setIsAddingProvider(false);
-    setEditingProviderId(null);
-    setFormData({
-      name: 'openai',
-      apiKey: '',
-      baseUrl: '',
-      models: [],
-      enabled: true,
-    });
-    setFormErrors({});
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    // For editing existing providers, API key is optional (user can keep existing one)
-    // For new providers, API key is required
-    if (!editingProviderId && !formData.apiKey.trim()) {
-      errors.apiKey = t('errors.invalidApiKey');
-    }
-
-    if (formData.baseUrl && !isValidUrl(formData.baseUrl)) {
-      errors.baseUrl = t('errors.invalidConfiguration');
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Helper function to validate URL
-  const isValidUrl = (url: string): boolean => {
+  const loadProviders = async () => {
     try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  // Save provider
-  const handleSaveProvider = () => {
-    if (!validateForm()) return;
-
-    const providerData: Partial<LLMProviderConfigType> = {
-      name: formData.name,
-      baseUrl: formData.baseUrl.trim() || DEFAULT_BASE_URLS[formData.name],
-      models: formData.models,
-      enabled: formData.enabled,
-    };
-
-    // Only include API key if it's provided (not empty)
-    if (formData.apiKey.trim()) {
-      providerData.apiKey = formData.apiKey.trim();
-    }
-
-    if (editingProviderId) {
-      updateLLMProvider(editingProviderId, providerData);
-    } else {
-      // For new providers, API key is required
-      if (!formData.apiKey.trim()) {
-        setFormErrors({ apiKey: t('errors.invalidApiKey') });
-        return;
+      setLoading(true);
+      const response = await fetch('/api/settings');
+      const data = await response.json();
+      
+      if (data.success) {
+        setProviders(data.data.llmProviders || []);
+        
+        // Initialize provider statuses
+        const statuses: Record<string, ProviderStatus> = {};
+        for (const provider of data.data.llmProviders || []) {
+          statuses[provider.id] = {
+            id: provider.id,
+            status: provider.enabled ? 'disconnected' : 'disabled',
+            models: provider.models || []
+          };
+        }
+        setProviderStatuses(statuses);
       }
-      addLLMProvider({
-        ...providerData,
-        apiKey: formData.apiKey.trim(),
-      } as Omit<LLMProviderConfigType, 'id'>);
+    } catch (error) {
+      console.error('Failed to load providers:', error);
+    } finally {
+      setLoading(false);
     }
-
-    handleCancelForm();
   };
 
-  // Test connection - use backend API for testing
-  const handleTestConnection = async (providerId: string) => {
-    setTestingConnections(prev => new Set(prev).add(providerId));
-    
+  const testConnection = async (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId);
+    if (!provider) return;
+
+    setProviderStatuses(prev => ({
+      ...prev,
+      [providerId]: { ...prev[providerId], status: 'testing' }
+    }));
+
     try {
-      // Call backend API to test connection using stored API key
       const response = await fetch('/api/settings/test-connection', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ providerId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: provider.name,
+          providerId: providerId
+        })
       });
+
+      const result: TestConnectionResult = await response.json();
       
-      if (response.ok) {
-        const result = await response.json();
-        setConnectionResults(prev => ({
-          ...prev,
-          [providerId]: {
-            success: result.success,
-            error: result.error,
-            timestamp: Date.now(),
-          }
-        }));
-      } else {
-        throw new Error('Failed to test connection');
+      setProviderStatuses(prev => ({
+        ...prev,
+        [providerId]: {
+          ...prev[providerId],
+          status: result.success ? 'connected' : 'error',
+          error: result.error,
+          models: result.models?.map(m => ({
+            id: m.id,
+            name: m.name,
+            displayName: m.name,
+            supportsToolCalling: m.supportsToolCalling,
+            maxTokens: 4096 // Default value
+          })),
+          lastTested: result.timestamp
+        }
+      }));
+
+      // Update provider models if connection successful
+      if (result.success && result.models) {
+        const updatedProviders = providers.map(p => 
+          p.id === providerId 
+            ? { 
+                ...p, 
+                models: result.models!.map(m => ({
+                  id: m.id,
+                  name: m.name,
+                  displayName: m.name,
+                  supportsToolCalling: m.supportsToolCalling,
+                  maxTokens: 4096
+                }))
+              }
+            : p
+        );
+        setProviders(updatedProviders);
+        
+        // Save updated models to backend
+        await saveProviders(updatedProviders);
       }
     } catch (error) {
       console.error('Connection test failed:', error);
-      setConnectionResults(prev => ({
+      setProviderStatuses(prev => ({
         ...prev,
         [providerId]: {
-          success: false,
-          error: error instanceof Error ? error.message : 'Connection test failed',
-          timestamp: Date.now(),
+          ...prev[providerId],
+          status: 'error',
+          error: 'Connection test failed'
         }
       }));
+    }
+  };
+
+  const saveProviders = async (updatedProviders: LLMProvider[]) => {
+    try {
+      setSaving(true);
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          llmProviders: updatedProviders
+        })
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save providers');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to save providers:', error);
+      return false;
     } finally {
-      setTestingConnections(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(providerId);
-        return newSet;
+      setSaving(false);
+    }
+  };
+
+  const addProvider = async () => {
+    if (!newProvider.name || !newProvider.apiKey) return;
+
+    const provider: LLMProvider = {
+      id: `${newProvider.name}-${Date.now()}`,
+      name: newProvider.name,
+      apiKey: newProvider.apiKey,
+      baseUrl: newProvider.baseUrl || getDefaultBaseUrl(newProvider.name),
+      models: [],
+      enabled: newProvider.enabled ?? true
+    };
+
+    const updatedProviders = [...providers, provider];
+    const success = await saveProviders(updatedProviders);
+    
+    if (success) {
+      setProviders(updatedProviders);
+      setProviderStatuses(prev => ({
+        ...prev,
+        [provider.id]: {
+          id: provider.id,
+          status: provider.enabled ? 'disconnected' : 'disabled',
+          models: []
+        }
+      }));
+      setShowAddForm(false);
+      setNewProvider({ name: 'openai', enabled: true, models: [] });
+      
+      // Test connection for new provider
+      if (provider.enabled) {
+        setTimeout(() => testConnection(provider.id), 500);
+      }
+    }
+  };
+
+  const updateProvider = async (providerId: string, updates: Partial<LLMProvider>) => {
+    const updatedProviders = providers.map(p => 
+      p.id === providerId ? { ...p, ...updates } : p
+    );
+    
+    const success = await saveProviders(updatedProviders);
+    if (success) {
+      setProviders(updatedProviders);
+      setEditingProvider(null);
+      
+      // Update status if enabled state changed
+      if ('enabled' in updates) {
+        setProviderStatuses(prev => ({
+          ...prev,
+          [providerId]: {
+            ...prev[providerId],
+            status: updates.enabled ? 'disconnected' : 'disabled'
+          }
+        }));
+      }
+    }
+  };
+
+  const deleteProvider = async (providerId: string) => {
+    if (!confirm(text.confirmDelete)) return;
+
+    const updatedProviders = providers.filter(p => p.id !== providerId);
+    const success = await saveProviders(updatedProviders);
+    
+    if (success) {
+      setProviders(updatedProviders);
+      setProviderStatuses(prev => {
+        const newStatuses = { ...prev };
+        delete newStatuses[providerId];
+        return newStatuses;
       });
     }
   };
 
-  // Note: API key input for testing is no longer needed
+  const toggleProvider = async (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId);
+    if (!provider) return;
 
-  // Update form data when provider selection changes
-  useEffect(() => {
-    if (isAddingProvider || editingProviderId) {
-      setFormData(prev => ({
-        ...prev,
-        baseUrl: prev.baseUrl || DEFAULT_BASE_URLS[prev.name],
-        models: prev.models.length > 0 ? prev.models : DEFAULT_MODELS[prev.name],
-      }));
+    await updateProvider(providerId, { enabled: !provider.enabled });
+  };
+
+  const getDefaultBaseUrl = (providerName: string): string => {
+    switch (providerName) {
+      case 'openai': return 'https://api.openai.com/v1';
+      case 'deepseek': return 'https://api.deepseek.com/v1';
+      case 'openrouter': return 'https://openrouter.ai/api/v1';
+      default: return '';
     }
-  }, [formData.name, isAddingProvider, editingProviderId]);
+  };
 
-  const providerOptions = [
-    { value: 'openai', label: t('providers.openai') },
-    { value: 'deepseek', label: t('providers.deepseek') },
-    { value: 'openrouter', label: t('providers.openrouter') },
-  ];
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'connected': return 'bg-green-500';
+      case 'testing': return 'bg-yellow-500 animate-pulse';
+      case 'error': return 'bg-red-500';
+      case 'disabled': return 'bg-gray-400';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case 'connected': return text.connected;
+      case 'testing': return text.testing;
+      case 'error': return text.error;
+      case 'disabled': return text.disabled;
+      default: return text.disconnected;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-gray-500 dark:text-gray-400">{text.loading}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      <Card variant="outlined">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t('settings.llmProvider')}</CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {t('settings.llmProviderDescription')}
-              </p>
-            </div>
-            <Button
-              onClick={handleAddProvider}
-              disabled={isAddingProvider || editingProviderId !== null}
-            >
-              {t('settings.addProvider', 'Add Provider')}
-            </Button>
-          </div>
-        </CardHeader>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">{text.title}</h2>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          disabled={saving}
+        >
+          {text.addProvider}
+        </button>
+      </div>
 
-        <CardContent>
-          {/* Add/Edit Provider Form */}
-          {(isAddingProvider || editingProviderId) && (
-            <Card variant="outlined" className="mb-6 bg-gray-50 dark:bg-gray-900">
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select
-                      label={t('settings.llmProvider')}
-                      options={providerOptions}
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        name: e.target.value as LLMProvider,
-                        baseUrl: DEFAULT_BASE_URLS[e.target.value as LLMProvider],
-                        models: DEFAULT_MODELS[e.target.value as LLMProvider],
-                      }))}
-                      fullWidth
-                    />
+      {/* Security Note */}
+      <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg dark:text-gray-400 dark:bg-gray-700">
+        <p>{text.note}</p>
+      </div>
 
-                    <Input
-                      label={t('settings.apiKey')}
-                      type="password"
-                      value={formData.apiKey}
-                      onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
-                      placeholder={editingProviderId ? 
-                        t('settings.apiKeyPlaceholderEdit', 'Leave empty to keep existing API key') : 
-                        t('settings.apiKeyPlaceholder')}
-                      error={formErrors.apiKey}
-                      helperText={editingProviderId ? 
-                        t('settings.apiKeyHelperEdit', 'Enter a new API key to update, or leave empty to keep the current one') : 
-                        undefined}
-                      fullWidth
-                      required={!editingProviderId}
-                    />
-                  </div>
+      {/* Provider List */}
+      <div className="space-y-4">
+        {providers.map(provider => {
+          const status = providerStatuses[provider.id];
+          const isEditing = editingProvider === provider.id;
+          
+          return (
+            <div key={provider.id} className="bg-white border border-gray-200 rounded-lg p-4 dark:bg-gray-800 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${getStatusColor(status?.status || 'disconnected')}`}></div>
+                  <h3 className="font-medium">{provider.name}</h3>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {getStatusText(status?.status || 'disconnected')}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => testConnection(provider.id)}
+                    disabled={status?.status === 'testing' || !provider.enabled}
+                    className="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 border border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                  >
+                    {status?.status === 'testing' ? text.testingConnection : text.testConnection}
+                  </button>
+                  <button
+                    onClick={() => setEditingProvider(isEditing ? null : provider.id)}
+                    className="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 border border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                  >
+                    {isEditing ? text.cancel : text.edit}
+                  </button>
+                  <button
+                    onClick={() => toggleProvider(provider.id)}
+                    className={`text-sm px-3 py-1 rounded ${
+                      provider.enabled 
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                    }`}
+                  >
+                    {provider.enabled ? text.disable : text.enable}
+                  </button>
+                  <button
+                    onClick={() => deleteProvider(provider.id)}
+                    className="text-sm px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                  >
+                    {text.delete}
+                  </button>
+                </div>
+              </div>
 
-                  <Input
-                    label={t('settings.baseUrl')}
-                    type="url"
-                    value={formData.baseUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, baseUrl: e.target.value }))}
-                    placeholder={t('settings.baseUrlPlaceholder')}
-                    error={formErrors.baseUrl}
-                    helperText={`Default: ${DEFAULT_BASE_URLS[formData.name]}`}
-                    fullWidth
-                  />
-
-                  <div className="flex items-center space-x-2">
+              {isEditing && (
+                <div className="space-y-3 mb-4 p-3 bg-gray-50 rounded dark:bg-gray-700">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{text.apiKey}</label>
                     <input
-                      type="checkbox"
-                      id="provider-enabled"
-                      checked={formData.enabled}
-                      onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      type="password"
+                      placeholder={provider.apiKey.includes('*') ? text.enterNewKey : text.apiKeyPlaceholder}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+                      onChange={(e) => {
+                        const updatedProviders = providers.map(p => 
+                          p.id === provider.id ? { ...p, apiKey: e.target.value } : p
+                        );
+                        setProviders(updatedProviders);
+                      }}
                     />
-                    <label htmlFor="provider-enabled" className="text-sm text-gray-700 dark:text-gray-300">
-                      {t('settings.serverEnabled')}
-                    </label>
+                    {provider.apiKey.includes('*') && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{text.maskedKey}</p>
+                    )}
                   </div>
-
-                  <div className="flex justify-end space-x-3">
-                    <Button variant="outline" onClick={handleCancelForm}>
-                      {t('common.cancel')}
-                    </Button>
-                    <Button onClick={handleSaveProvider}>
-                      {editingProviderId ? t('common.save') : t('settings.addProvider', 'Add Provider')}
-                    </Button>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{text.baseUrl}</label>
+                    <input
+                      type="url"
+                      value={provider.baseUrl || ''}
+                      placeholder={text.baseUrlPlaceholder}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+                      onChange={(e) => {
+                        const updatedProviders = providers.map(p => 
+                          p.id === provider.id ? { ...p, baseUrl: e.target.value } : p
+                        );
+                        setProviders(updatedProviders);
+                      }}
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => updateProvider(provider.id, providers.find(p => p.id === provider.id)!)}
+                      disabled={saving}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? text.saving : text.save}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingProvider(null);
+                        loadProviders(); // Reset changes
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 border border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                    >
+                      {text.cancel}
+                    </button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
 
-          {/* Existing Providers List */}
-          <div className="space-y-4">
-            {llmProviders.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>{t('settings.noProvidersConfigured', 'No LLM providers configured yet.')}</p>
-                <p className="text-sm mt-1">
-                  {t('settings.addProviderToStart', 'Add a provider to start using the chat interface.')}
-                </p>
+              {/* Status Details */}
+              {status?.error && (
+                <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-3">
+                  {status.error}
+                </div>
+              )}
+
+              {status?.lastTested && (
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  {text.lastTested}: {new Date(status.lastTested).toLocaleString()}
+                </div>
+              )}
+
+              {/* Models */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">{text.models}</h4>
+                {status?.models && status.models.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {status.models.map(model => (
+                      <div key={model.id} className="text-sm p-2 bg-gray-50 rounded dark:bg-gray-700">
+                        <div className="font-medium">{model.displayName}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {model.supportsToolCalling && `${text.toolCalling} • `}
+                          {text.maxTokens}: {model.maxTokens?.toLocaleString() || 'N/A'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{text.noModels}</div>
+                )}
               </div>
-            ) : (
-              llmProviders.map((provider) => (
-                <Card key={provider.id} variant="outlined" className="hover:shadow-sm transition-shadow">
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              provider.enabled ? 'bg-green-500' : 'bg-gray-400'
-                            }`} />
-                            <h3 className="font-medium text-gray-900 dark:text-white">
-                              {t(`providers.${provider.name}`)}
-                            </h3>
-                          </div>
-                          <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300">
-                            {provider.models.length} {t('settings.model', { count: provider.models.length })}
-                          </span>
-                        </div>
-                        
-                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs font-medium min-w-0 flex-shrink-0">API Key:</span>
-                            {(() => {
-                              const keyStatus = getApiKeyStatus(provider.apiKey);
-                              return keyStatus.configured ? (
-                                <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200">
-                                  {keyStatus.masked ? '••••' : 'Configured'}
-                                </code>
-                              ) : (
-                                <span className="text-xs text-gray-500">
-                                  {t('settings.notConfigured', 'Not configured')}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                          {provider.baseUrl && (
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs font-medium min-w-0 flex-shrink-0">Base URL:</span>
-                              <code className="text-xs text-blue-600 dark:text-blue-400 font-mono bg-blue-50 dark:bg-blue-900/20 px-1 rounded">
-                                {truncateUrl(provider.baseUrl, 35)}
-                              </code>
-                            </div>
-                          )}
-                          
-                          {/* Connection Test Result */}
-                          {connectionResults[provider.id] && (
-                            <div className={`mt-2 flex items-center space-x-2 text-xs ${
-                              connectionResults[provider.id].success 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              {connectionResults[provider.id].success ? (
-                                <>
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                  <span>{t('settings.connectionSuccessful')}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                  </svg>
-                                  <span>
-                                    {t('settings.connectionFailed')}
-                                    {connectionResults[provider.id].error && (
-                                      <span className="ml-1">: {connectionResults[provider.id].error}</span>
-                                    )}
-                                  </span>
-                                </>
-                              )}
-                              <span className="text-gray-400">
-                                ({new Date(connectionResults[provider.id].timestamp).toLocaleTimeString()})
-                              </span>
-                            </div>
-                          )}
-                        </div>
+            </div>
+          );
+        })}
+      </div>
 
-                        {/* Model List with Tool Support Indicators */}
-                        <div className="mt-3">
-                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {t('settings.availableModels', 'Available Models')}:
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {provider.models.map((model) => (
-                              <span
-                                key={model.id}
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                                  model.supportsToolCalling
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                                }`}
-                              >
-                                {model.name}
-                                {model.supportsToolCalling && (
-                                  <svg
-                                    className="ml-1 w-3 h-3"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                    aria-label={t('settings.modelSupportsTools')}
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                )}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleTestConnection(provider.id)}
-                          loading={testingConnections.has(provider.id)}
-                          disabled={!provider.enabled}
-                        >
-                          {t('settings.testConnection')}
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleLLMProvider(provider.id)}
-                        >
-                          {provider.enabled ? t('settings.disable', 'Disable') : t('settings.enable', 'Enable')}
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditProvider(provider)}
-                          disabled={isAddingProvider || editingProviderId !== null}
-                        >
-                          {t('common.edit')}
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeLLMProvider(provider.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
-                        >
-                          {t('common.delete')}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+      {/* Add Provider Form */}
+      {showAddForm && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 dark:bg-gray-800 dark:border-gray-700">
+          <h3 className="font-medium mb-4">{text.addProvider}</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">{text.providerName}</label>
+              <select
+                value={newProvider.name}
+                onChange={(e) => setNewProvider(prev => ({ 
+                  ...prev, 
+                  name: e.target.value,
+                  baseUrl: getDefaultBaseUrl(e.target.value)
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+              >
+                <option value="openai">{text.openai}</option>
+                <option value="deepseek">{text.deepseek}</option>
+                <option value="openrouter">{text.openrouter}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{text.apiKey}</label>
+              <input
+                type="password"
+                value={newProvider.apiKey || ''}
+                placeholder={text.apiKeyPlaceholder}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+                onChange={(e) => setNewProvider(prev => ({ ...prev, apiKey: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{text.baseUrl}</label>
+              <input
+                type="url"
+                value={newProvider.baseUrl || ''}
+                placeholder={text.baseUrlPlaceholder}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+                onChange={(e) => setNewProvider(prev => ({ ...prev, baseUrl: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="enabled"
+                checked={newProvider.enabled}
+                onChange={(e) => setNewProvider(prev => ({ ...prev, enabled: e.target.checked }))}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+              />
+              <label htmlFor="enabled" className="text-sm">{text.enabled}</label>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={addProvider}
+                disabled={!newProvider.name || !newProvider.apiKey || saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? text.saving : text.save}
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddForm(false);
+                  setNewProvider({ name: 'openai', enabled: true, models: [] });
+                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 border border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+              >
+                {text.cancel}
+              </button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
-};
-
-export default LLMProviderConfig;
+}

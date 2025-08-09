@@ -1,5 +1,27 @@
 import { ValidationError } from './errors';
-import { ChatRequest, RunToolRequest, LLMProvider } from '../types';
+import { Settings } from '../types';
+
+// Define types that are used in validation but may not be in the main types file
+export interface ChatRequest {
+  messages: any[];
+  sessionId: string;
+  provider: LLMProvider;
+  model: string;
+  apiKey?: string;
+  baseUrl?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+  availableTools?: any[];
+}
+
+export interface RunToolRequest {
+  toolCall: any;
+  sessionId: string;
+  messages: any[];
+}
+
+export type LLMProvider = 'openai' | 'deepseek' | 'openrouter';
 
 export function validateChatRequest(data: any): ChatRequest {
   if (!data || typeof data !== 'object') {

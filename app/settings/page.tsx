@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
-import Link from 'next/link'
 import { NavigationLayout } from '../../src/components/next'
 import { getServerSettings } from '../../lib/server-data'
 import { detectLanguage } from '../../lib/server-utils'
+import LLMProviderConfig from '../../src/components/LLMProviderConfig'
 
 export const metadata: Metadata = {
   title: 'Settings',
@@ -172,12 +172,9 @@ export default async function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Placeholder for future interactive components */}
-                <div className="mt-8 p-4 border-2 border-dashed border-muted rounded-lg text-center text-muted-foreground">
-                  <p className="text-sm">
-                    Interactive configuration components will be implemented in future tasks.
-                    This includes provider forms, connection testing, and MCP server management.
-                  </p>
+                {/* LLM Provider Management Component */}
+                <div className="mt-8">
+                  <LLMProviderConfig language={language} />
                 </div>
               </div>
             </div>
