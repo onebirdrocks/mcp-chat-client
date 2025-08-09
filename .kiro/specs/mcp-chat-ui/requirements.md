@@ -4,10 +4,11 @@
 
 MCP Chat UI is a modern web chat application that provides users with a secure interface for interacting with frontier large language models (OpenAI, DeepSeek, OpenRouter) while seamlessly integrating with local MCP (Model Context Protocol) servers. The system adopts a local-first architecture to ensure data privacy and complete user control over AI tool execution.
 
-The application follows a three-tier architecture design:
-- **Frontend Layer**: Modern user interface built with React + Vite
-- **Backend Layer**: Next.js API routes handling session management and LLM communication
-- **Tool Layer**: Local MCP servers providing tool execution capabilities
+The application follows a unified Next.js architecture design:
+- **Single Next.js Application**: Frontend and backend consolidated into one Next.js project using App Router
+- **Server Components and Route Handlers**: Pages rendered as Server Components, API logic as Route Handlers
+- **Configuration-Driven MCP Servers**: JSON configuration compatible with Cursor's mcpServers format
+- **Tool Layer**: Local MCP servers providing tool execution capabilities with explicit user confirmation
 
 Core features include secure API key management, real-time chat experience, tool execution confirmation mechanisms, multi-language support, and comprehensive data privacy protection.
 
@@ -81,19 +82,20 @@ Core features include secure API key management, real-time chat experience, tool
 5. WHEN I have a long conversation with tools THEN the system SHALL maintain context and conversation flow
 6. WHEN tool execution takes a long time THEN the system SHALL display progress indicators and status updates
 
-### Requirement 6: Modern Technology Stack and Architecture
+### Requirement 6: Unified Next.js Architecture and Technology Stack
 
-**User Story:** As a developer, I want the system to be built with modern web technologies, so that it's maintainable and extensible.
+**User Story:** As a developer, I want the system to be built as a single Next.js application with modern web technologies, so that it's maintainable, deployable, and extensible.
 
 #### Acceptance Criteria
 
-1. WHEN building the frontend THEN the system SHALL use React with TypeScript for type safety
-2. WHEN building the backend THEN the system SHALL use Next.js API routes for server functionality
-3. WHEN managing state THEN the system SHALL use Zustand for predictable state management
-4. WHEN styling components THEN the system SHALL use Tailwind CSS for consistent design
-5. WHEN handling MCP communication THEN the system SHALL use @modelcontextprotocol/sdk for protocol compliance
-6. WHEN implementing internationalization THEN the system SHALL use react-i18next for multi-language support
-7. WHEN building and developing THEN the system SHALL use Vite for fast development experience
+1. WHEN building the application THEN the system SHALL use Next.js 15 with App Router as a single unified application
+2. WHEN rendering pages THEN the system SHALL use Server Components for static content and Client Components for interactive elements
+3. WHEN implementing API logic THEN the system SHALL use Route Handlers under app/api/ with runtime = "nodejs"
+4. WHEN managing state THEN the system SHALL use React state and context for client-side state management
+5. WHEN styling components THEN the system SHALL use Tailwind CSS for consistent design
+6. WHEN handling MCP communication THEN the system SHALL use @modelcontextprotocol/sdk for protocol compliance
+7. WHEN implementing internationalization THEN the system SHALL use Next.js built-in i18n support
+8. WHEN building and developing THEN the system SHALL use Next.js built-in bundling with Turbopack for development
 
 ### Requirement 7: Data Privacy and Security Protection
 
@@ -148,3 +150,17 @@ Core features include secure API key management, real-time chat experience, tool
 4. WHEN displaying dates and times THEN they SHALL be formatted according to the user's language locale
 5. WHEN error messages appear THEN they SHALL be displayed in the user's selected language
 6. WHEN adding new languages THEN the system SHALL support extension without requiring core code refactoring
+
+### Requirement 11: Single-User Provider and Model Selection
+
+**User Story:** As a user, I want to select LLM providers and models from pre-configured options when creating a new chat session, so that I can choose the appropriate AI model without managing API keys myself.
+
+#### Acceptance Criteria
+
+1. WHEN creating a new chat session THEN the system SHALL require me to select a provider and model from available options
+2. WHEN viewing provider options THEN the system SHALL only show providers that have API keys configured on the server
+3. WHEN I select a provider and model THEN the system SHALL use the server-stored API key for that provider
+4. WHEN API keys are managed THEN they SHALL remain exclusively on the server and never be exposed to the client
+5. WHEN I view provider settings THEN the system SHALL show provider status and available models without exposing keys
+6. WHEN a provider is disabled THEN it SHALL not appear in the selection list for new sessions
+7. WHEN I create a session THEN the selected provider and model SHALL determine which server-side credentials are used

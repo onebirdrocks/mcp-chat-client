@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "example-server": {
+      "command": "echo",
+      "args": ["MCP server placeholder - will be configured in later tasks"]
+    }
+  }
+}

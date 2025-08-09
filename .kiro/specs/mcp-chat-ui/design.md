@@ -14,12 +14,14 @@ MCP Chat UI is a modern web application that provides users with a secure, local
 
 ### Technical Architecture Overview
 
-The application consists of three main layers:
-- **Frontend Layer**: Modern user interface built with React + Vite
-- **Backend Layer**: Next.js API routes handling business logic and data management
-- **Integration Layer**: Seamless integration with local MCP servers
+The application is built as a single Next.js application with App Router, consolidating frontend and backend into one unified project:
+- **Single Next.js Application**: Frontend and backend consolidated using App Router architecture
+- **Server Components**: Static content and initial page renders handled server-side
+- **Route Handlers**: API endpoints and tool execution logic under app/api/ with Node.js runtime
+- **Client Components**: Interactive UI elements with React state management
+- **Integration Layer**: Seamless integration with local MCP servers via connection pooling
 
-All processing occurs locally, with no external data transmission except for LLM API calls using user-provided credentials.
+All processing occurs locally, with no external data transmission except for LLM API calls using server-stored credentials.
 
 ## System Architecture
 
@@ -90,19 +92,14 @@ graph TB
 
 ### Technology Stack Selection
 
-**Frontend Technology Stack:**
-- **React 18 + TypeScript**: Provides type safety and modern React features
-- **Vite**: Fast development build tool with optimized production builds
+**Unified Next.js Application Stack:**
+- **Next.js 15 + App Router**: Single application framework with Server Components and Route Handlers
+- **React 18 + TypeScript**: Type-safe components with Server and Client Component patterns
 - **Tailwind CSS**: Consistent utility-first styling system
-- **Zustand**: Lightweight state management solution
-- **React Router**: Client-side routing management
-- **react-i18next**: Complete internationalization support framework
-
-**Backend Technology Stack:**
-- **Next.js 15 + App Router**: Modern full-stack React framework
-- **@modelcontextprotocol/sdk**: Official MCP protocol SDK
+- **Next.js Built-in Features**: Routing, internationalization, and bundling
+- **@modelcontextprotocol/sdk**: Official MCP protocol SDK for server-side tool integration
 - **OpenAI SDK**: Unified interface compatible with multiple LLM providers
-- **Node.js Built-in Modules**: File system and encryption operations
+- **Node.js Built-in Modules**: File system, encryption, and child process operations
 
 **Security & Tools:**
 - **AES Encryption**: Encrypted storage for API keys and sensitive data
@@ -114,26 +111,37 @@ graph TB
 - **TypeScript**: Static type checking and intelligent code completion
 - **ESLint + Prettier**: Code quality and formatting tools
 - **Tailwind CSS IntelliSense**: Enhanced development experience
-- **i18next-parser**: Automatic translation key extraction tool
+- **Turbopack**: Fast development bundling with Next.js
+- **Next.js Built-in Optimization**: Automatic code splitting and optimization
 
 ## Component Design and Interfaces
 
-### Frontend Component Architecture
+### Next.js App Router Component Architecture
 
-#### Core Layout Components
+#### Server Components (app/ directory)
 
-**AppLayout (Application Layout)**
-- Main application shell containing sidebar and content area
-- Responsive design adapting to mobile and desktop
-- Navigation between chat, settings, and history views
-- Multi-language switching and theme switching support
+**Page Components (Server Components)**
+- `app/page.tsx`: Home page with initial chat interface
+- `app/chat/[sessionId]/page.tsx`: Individual chat session pages
+- `app/settings/page.tsx`: Settings configuration page
+- `app/history/page.tsx`: Chat history overview page
+- Server-side rendering for SEO and initial load performance
+- Direct database/file system access for data fetching
 
-**Sidebar**
-- Chat history list with auto-generated titles
-- New chat button with provider/model selection support
-- Settings and configuration access entry
-- Chat history search functionality
-- Language switcher and user preference settings
+**Layout Components (Server Components)**
+- `app/layout.tsx`: Root layout with metadata and global styles
+- `app/chat/layout.tsx`: Chat-specific layout with sidebar
+- Static shell rendering with client component slots
+- Server-side theme and language detection
+
+#### Client Components (Interactive UI)
+
+**Core Interactive Components**
+- `ChatInterface`: Main chat interaction with message input and display
+- `MessageList`: Real-time message rendering with streaming support
+- `ToolConfirmationDialog`: Modal for tool execution approval
+- `Sidebar`: Collapsible navigation with chat history
+- `SettingsPanel`: Interactive configuration forms
 
 #### Chat Components
 
@@ -189,11 +197,11 @@ graph TB
 - Connection testing and tool list display
 - Configuration validation and error notifications
 
-### 后端 API 接口设计
+### Route Handlers API Design (app/api/)
 
-#### 核心 API 路由
+#### Core API Routes
 
-**POST /api/chat（聊天接口）**
+**POST app/api/chat/route.ts (Chat Interface)**
 ```typescript
 interface ChatRequest {
   messages: Message[];
@@ -212,7 +220,7 @@ interface ChatResponse {
 }
 ```
 
-**POST /api/run-tool（工具执行接口）**
+**POST app/api/run-tool/route.ts (Tool Execution Interface)**
 ```typescript
 interface RunToolRequest {
   toolCall: ToolCall;
@@ -229,7 +237,7 @@ interface RunToolResponse {
 }
 ```
 
-**GET/POST /api/settings（设置管理接口）**
+**GET/POST app/api/settings/route.ts (Settings Management Interface)**
 ```typescript
 interface Settings {
   llmProviders: LLMProviderConfig[];
@@ -245,7 +253,7 @@ interface SecuritySettings {
 }
 ```
 
-**GET /api/chat-history（聊天历史接口）**
+**GET app/api/chat-history/route.ts (Chat History Interface)**
 ```typescript
 interface ChatHistoryResponse {
   sessions: ChatSession[];
@@ -266,9 +274,9 @@ interface ChatSession {
 }
 ```
 
-#### 安全相关 API
+#### Security-Related APIs
 
-**POST /api/settings/test-connection（连接测试）**
+**POST app/api/settings/test-connection/route.ts (Connection Testing)**
 ```typescript
 interface TestConnectionRequest {
   provider: LLMProvider;
@@ -283,7 +291,7 @@ interface TestConnectionResponse {
 }
 ```
 
-**POST /api/export/chat-history（数据导出）**
+**POST app/api/export/chat-history/route.ts (Data Export)**
 ```typescript
 interface ExportRequest {
   sessionIds?: string[];
@@ -298,7 +306,7 @@ interface ExportResponse {
 }
 ```
 
-**POST /api/privacy/cleanup（隐私清理）**
+**POST app/api/privacy/cleanup/route.ts (Privacy Cleanup)**
 ```typescript
 interface CleanupRequest {
   type: 'sessions' | 'settings' | 'all';
@@ -311,6 +319,36 @@ interface CleanupResponse {
   success: boolean;
 }
 ```
+
+### Configuration-Driven Architecture
+
+**MCP Server Configuration (config/mcp.config.json)**
+```json
+{
+  "mcpServers": {
+    "ebook-mcp": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/ebook-mcp/src/ebook_mcp/", "run", "main.py"]
+    },
+    "weather": {
+      "command": "uvx", 
+      "args": ["--directory", "/path/to/weather", "run", "weather.py"]
+    }
+  }
+}
+```
+
+**LLM Provider Configuration (Server-Side)**
+- Providers configured with API keys stored securely on server
+- Client receives only provider names and available models
+- Session creation requires provider/model selection from available options
+- No API key exposure to client-side code
+
+**Connection Pool Management**
+- Server maintains persistent connections to MCP servers
+- Tool discovery cached per session with serverId prefixes
+- Automatic reconnection with exponential backoff
+- Health monitoring and status reporting
 
 #### Core Service Components
 
@@ -603,9 +641,9 @@ interface TranslationKeys {
 - RTL (Right-to-Left) language support preparation
 - Automatic extraction and validation tools for translation keys
 
-### 状态管理架构
+### State Management Architecture
 
-**聊天状态管理 (Zustand)**
+**Client-Side State Management (React Context + useState)**
 ```typescript
 interface ChatStore {
   // 当前会话状态
@@ -642,7 +680,7 @@ interface ChatStore {
 }
 ```
 
-**设置状态管理 (Zustand)**
+**Settings State Management (React Context)**
 ```typescript
 interface SettingsStore {
   // 配置状态
@@ -702,7 +740,7 @@ interface PrivacyReport {
 }
 ```
 
-**UI 状态管理 (Zustand)**
+**UI State Management (React Context)**
 ```typescript
 interface UIStore {
   // 界面状态

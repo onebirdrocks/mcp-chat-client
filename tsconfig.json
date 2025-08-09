@@ -1,7 +1,65 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@/components/*": [
+        "./components/*"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ],
+      "@/services/*": [
+        "./services/*"
+      ],
+      "@/config/*": [
+        "./config/*"
+      ],
+      "@/app/*": [
+        "./app/*"
+      ],
+      "@/src/*": [
+        "./src/*"
+      ]
+    },
+    "target": "ES2017"
+  },
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "app/**/*",
+    "components/**/*",
+    "lib/**/*",
+    "services/**/*",
+    "config/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/*",
+    "backend/**/*",
+    "dist/**/*"
   ]
 }

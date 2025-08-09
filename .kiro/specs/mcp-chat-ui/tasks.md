@@ -1,232 +1,252 @@
-# Implementation Plan
+# Implementation Plan - Gradual Refactoring Strategy
 
-- [x] 1. Set up project structure and core dependencies
-  - Create Vite + React + TypeScript project with recommended folder structure
-  - Install and configure core dependencies: Tailwind CSS, Zustand, React Router, react-i18next
-  - Set up path aliases and development tools (ESLint, Prettier)
-  - Create basic project structure with placeholder components
-  - _Requirements: 6.1, 6.3, 6.4_
+**Refactoring Strategy:**
+- Keep existing `src/` (Vite frontend) and `backend/` (Next.js API) directories until new architecture is fully implemented and tested
+- New unified Next.js architecture developed in parallel in root `app/` directory
+- Only remove corresponding old code after new functionality is fully working and tested
+- Provide data migration tools to ensure no user data is lost
 
-- [ ] 2. Implement internationalization foundation
-  - [x] 2.1 Configure react-i18next with English and Chinese support
-    - Set up i18n configuration with language detection and fallback
-    - Create translation files for English (default) and Chinese
-    - Implement language switching functionality
-    - _Requirements: 8.4, 9.4_
+## Phase 1: Preparation and New Architecture Setup
 
-  - [x] 2.2 Create core translation keys and utilities
-    - Define translation key structure for common, chat, settings, and error messages
-    - Implement translation hook and utilities for components
-    - Add language selection component for settings
-    - _Requirements: 8.4, 9.4_
+- [x] 1. Prepare for gradual refactoring and set up new architecture
+  - Analyze existing codebase structure (src/ for Vite frontend, backend/ for Next.js API)
+  - Create backup of current working implementation
+  - Set up new Next.js 15 App Router structure alongside existing code
+  - Install additional dependencies needed for unified architecture
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.8_
 
-- [-] 3. Build core UI components and layout
-  - [x] 3.1 Create base UI components
-    - Implement Button, Input, Modal, and other reusable UI components with Tailwind CSS
-    - Add loading states, error states, and accessibility features
-    - Create component variants and proper TypeScript interfaces
-    - _Requirements: 8.3, 8.5_
+- [ ] 2. Create core configuration and data management
+  - [ ] 2.1 Implement MCP server configuration system
+    - Create config/mcp.config.json with Cursor-compatible format
+    - Build configuration validation using Zod schemas
+    - Implement configuration loading and hot-reload functionality
+    - _Requirements: 3.1, 3.2, 3.6_
 
-  - [x] 3.2 Implement main application layout
-    - Create AppLayout component with sidebar and main content area
-    - Implement responsive design for desktop and mobile views
-    - Add navigation structure and routing setup
-    - _Requirements: 8.1, 8.2, 8.4_
+  - [ ] 2.2 Set up server-side settings and encryption
+    - Create secure settings storage with AES encryption for API keys
+    - Implement settings persistence in backend data directory
+    - Build settings validation and integrity checking
+    - _Requirements: 2.2, 7.2, 7.3, 11.5, 11.6_
 
-  - [x] 3.3 Build sidebar with chat history
-    - Create Sidebar component with chat session list
-    - Implement new chat button with provider/model selection
-    - Add search functionality for chat history
-    - Create session management UI (rename, delete, archive)
-    - _Requirements: 9.2, 9.3, 9.4, 9.5_
+- [ ] 3. Build Next.js App Router pages and layouts
+  - [ ] 3.1 Create root layout and page structure
+    - Implement app/layout.tsx with global styles and metadata
+    - Create app/page.tsx as main chat interface entry point
+    - Set up app/settings/page.tsx for configuration management
+    - Add app/history/page.tsx for chat session overview
+    - _Requirements: 6.1, 6.2_
 
-- [ ] 4. Implement state management with Zustand
-  - [x] 4.1 Create settings store
-    - Implement SettingsStore with LLM provider and MCP server configuration
-    - Add user preferences management including language and theme
-    - Create persistent storage for settings using localStorage
-    - _Requirements: 2.2, 7.2_
+  - [ ] 3.2 Implement Server Components for static content
+    - Build layout components using Server Components for initial rendering
+    - Create server-side data fetching for chat history and settings
+    - Implement theme and language detection on server side
+    - _Requirements: 6.1, 6.2, 10.1, 10.2_
 
-  - [x] 4.2 Create chat store
-    - Implement ChatStore for session and message management
-    - Add message handling, loading states, and tool call management
-    - Create session persistence and auto-save functionality
-    - _Requirements: 1.5, 5.1, 9.1_
+- [ ] 4. Develop Route Handlers for API functionality
+  - [ ] 4.1 Create core chat API routes
+    - Build app/api/chat/route.ts for message processing with tool call support
+    - Implement app/api/run-tool/route.ts for confirmed tool execution
+    - Create app/api/cancel-tool/route.ts for tool call cancellation
+    - Add streaming support in app/api/chat/stream/route.ts
+    - _Requirements: 1.2, 1.3, 4.3, 4.4, 5.1, 5.2_
 
-- [ ] 5. Build settings and configuration interface
-  - [x] 5.1 Create LLM provider configuration
-    - Build LLMProviderConfig component with provider selection (OpenAI, DeepSeek, OpenRouter)
-    - Implement secure API key input and storage
-    - Add model selection with tool calling support indication
-    - Create connection testing functionality
-    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+  - [ ] 4.2 Build settings and session management APIs
+    - Create app/api/settings/route.ts for configuration management
+    - Implement app/api/settings/test-connection/route.ts for provider testing
+    - Build app/api/chat-history/route.ts for session management
+    - Add app/api/sessions/route.ts for session CRUD operations
+    - _Requirements: 2.2, 2.7, 9.1, 9.2, 9.3, 9.4_
 
-  - [x] 5.2 Implement MCP server configuration
-    - Create MCPServerConfig component with JSON configuration editor
-    - Add server status indicators and connection management
-    - Implement add/remove/edit server configurations
-    - Create server connection testing and tool listing
-    - _Requirements: 3.1, 3.2, 3.5, 3.6_
+  - [ ] 4.3 Implement data export and privacy APIs
+    - Create app/api/export/chat-history/route.ts for data export
+    - Build app/api/privacy/cleanup/route.ts for data cleanup
+    - Add app/api/export/settings/route.ts for settings backup
+    - _Requirements: 7.5, 9.6_
 
-  - [x] 5.3 Build preferences and language settings
-    - Create user preferences interface with theme and language selection
-    - Implement language switching with immediate UI updates
-    - Add other application preferences (auto-scroll, sound)
-    - _Requirements: 8.4, 8.5_
-
-- [x] 6. Develop chat interface components
-  - [x] 6.1 Create message display components
-    - Build MessageList component with different message types (user, assistant, tool)
-    - Implement markdown rendering for formatted content
-    - Add message timestamps, copy functionality, and proper styling
-    - Create auto-scrolling behavior and smooth scrolling
-    - _Requirements: 1.1, 1.3, 1.4_
-
-  - [x] 6.2 Build message input interface
-    - Create MessageInput component with auto-resize text area
-    - Implement send button with loading states and keyboard shortcuts
-    - Add input validation and character count
-    - Create proper focus management and accessibility
-    - _Requirements: 1.2, 8.5_
-
-  - [x] 6.3 Implement tool confirmation dialog
-    - Build ToolConfirmationDialog component with clear tool information display
-    - Show tool name, description, and parameters with syntax highlighting
-    - Create Run/Cancel buttons with proper visual hierarchy
-    - Add parameter preview and validation
-    - _Requirements: 4.1, 4.2, 4.3, 4.4_
-
-- [ ] 7. Set up Next.js backend and API infrastructure
-  - [x] 7.1 Initialize Next.js backend with API routes
-    - Set up Next.js project structure with App Router
-    - Create API route structure for chat, settings, and tool execution
-    - Implement request/response interfaces and error handling
-    - Add CORS configuration and security middleware
-    - _Requirements: 6.2_
-
-  - [x] 7.2 Implement session management service
-    - Create SessionManager for chat session persistence
-    - Implement session storage, retrieval, and cleanup
-    - Add session search and filtering capabilities
-    - Create automatic session title generation using LLM
-    - _Requirements: 1.5, 9.1, 9.2, 9.3_
-
-- [ ] 8. Build LLM integration service
-  - [x] 8.1 Create LLM service abstraction
-    - Implement LLMService with support for OpenAI, DeepSeek, and OpenRouter
-    - Create unified interface for different providers
-    - Add API key management and request formatting
-    - Implement retry logic and error handling
-    - _Requirements: 2.1, 2.4, 2.5_
-
-  - [x] 8.2 Implement chat processing logic
-    - Create processQuery function for handling chat requests
-    - Add system prompt construction and message history management
-    - Implement tool call detection and response formatting
-    - Create streaming response support for real-time chat
-    - _Requirements: 1.2, 1.3, 4.1_
-
-- [ ] 9. Develop MCP server integration
-  - [x] 9.1 Create MCP client manager
-    - Implement MCPClientManager for multiple server connections
-    - Add server lifecycle management (connect, disconnect, reconnect)
-    - Create connection pooling and error recovery
-    - Implement tool listing and unified interface
+- [ ] 5. Build server-side service layer
+  - [ ] 5.1 Create MCP Client Manager service
+    - Implement MCPClientManager with connection pooling for multiple servers
+    - Build server lifecycle management (connect, disconnect, reconnect)
+    - Create tool discovery with serverId prefixes to avoid naming conflicts
+    - Add connection health monitoring and automatic recovery
     - _Requirements: 3.3, 3.4, 3.5, 3.6_
 
-  - [x] 9.2 Build tool execution service
-    - Create tool execution logic with user confirmation workflow
-    - Implement tool parameter validation and execution
-    - Add tool result processing and error handling
-    - Create conversation continuation after tool execution
-    - _Requirements: 4.3, 4.4, 4.5, 5.2, 5.3, 5.4_
+  - [ ] 5.2 Implement LLM Service abstraction
+    - Build LLMService supporting OpenAI, DeepSeek, and OpenRouter providers
+    - Create unified interface with server-side API key management
+    - Implement streaming response support and error handling
+    - Add token usage tracking and cost estimation
+    - _Requirements: 2.1, 2.4, 2.5, 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 10. Implement API endpoints
-  - [x] 10.1 Create chat API endpoints
-    - Build POST /api/chat endpoint for message processing
-    - Implement POST /api/run-tool endpoint for tool execution
-    - Add POST /api/cancel-tool endpoint for tool cancellation
-    - Create proper error handling and response formatting
-    - _Requirements: 1.2, 1.3, 4.3, 4.4, 5.1, 5.2, 5.3_
+  - [ ] 5.3 Build Session Manager service
+    - Create SessionManager for chat session persistence and management
+    - Implement automatic session title generation using LLM
+    - Add session search, filtering, and organization features
+    - Create session cleanup and archiving functionality
+    - _Requirements: 1.5, 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [x] 10.2 Build settings and history API endpoints
-    - Create GET/POST /api/settings endpoints for configuration management
-    - Implement GET /api/chat-history endpoint for session retrieval
-    - Add DELETE /api/chat-history/:id endpoint for session deletion
-    - Create PUT /api/chat-history/:id endpoint for session updates
-    - _Requirements: 2.2, 7.2, 9.2, 9.3, 9.4_
+- [ ] 6. Develop Client Components for interactive UI
+  - [ ] 6.1 Create core chat interface components
+    - Build ChatInterface client component with real-time messaging
+    - Implement MessageList with streaming message display
+    - Create MessageInput with auto-resize and keyboard shortcuts
+    - Add loading states and error handling throughout chat flow
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.6_
 
-- [ ] 11. Connect frontend and backend
-  - [x] 11.1 Implement API client service
-    - Create API client with proper error handling and retry logic
-    - Implement request/response interceptors for authentication
-    - Add loading state management and error reporting
-    - Create type-safe API calls with proper TypeScript interfaces
-    - _Requirements: 1.2, 1.3, 8.3_
+  - [ ] 6.2 Build tool confirmation and execution UI
+    - Create ToolConfirmationDialog with clear tool information display
+    - Show tool parameters with syntax highlighting and validation
+    - Implement Run/Cancel workflow with proper user feedback
+    - Add tool execution progress and result display
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 5.3, 5.4, 5.5_
 
-  - [x] 11.2 Integrate chat functionality
-    - Connect chat interface to backend API endpoints
-    - Implement real-time message updates and loading states
-    - Add tool confirmation workflow with backend integration
-    - Create proper error handling and user feedback
-    - _Requirements: 1.1, 1.2, 1.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3_
+  - [ ] 6.3 Implement sidebar and navigation
+    - Build collapsible Sidebar with chat history and session management
+    - Create new chat modal with provider/model selection from server options
+    - Add session search, rename, delete, and archive functionality
+    - Implement responsive navigation for mobile and desktop
+    - _Requirements: 8.1, 8.2, 8.6, 9.2, 9.3, 9.4, 11.7_
 
-- [x] 12. Add security and data privacy features
-  - [x] 12.1 Implement secure storage
-    - Implement secure API key storage in backend `.env` file with encryption
-    - Create secure session storage with proper cleanup in backend
-    - Add data export functionality for chat history
-    - Create privacy-focused data handling throughout the application
-    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+- [ ] 7. Create settings and configuration interface
+  - [ ] 7.1 Build LLM provider management
+    - Create provider configuration interface showing available providers
+    - Implement connection testing for configured providers
+    - Display provider status and available models without exposing API keys
+    - Add provider enable/disable functionality
+    - _Requirements: 2.1, 2.3, 2.6, 11.1, 11.2, 11.3, 11.4, 11.5_
 
-  - [x] 12.2 Add input validation and security
-    - Implement comprehensive input validation for all user inputs
-    - Add XSS prevention for chat messages and configurations
-    - Create rate limiting and request validation
-    - Add security headers and CORS configuration
-    - _Requirements: 7.1, 7.4_
+  - [ ] 7.2 Implement MCP server configuration
+    - Build MCP server management interface with JSON editor
+    - Show server connection status and available tools
+    - Add server configuration validation and testing
+    - Create server enable/disable and troubleshooting features
+    - _Requirements: 3.1, 3.2, 3.5, 3.6_
 
-- [ ] 13. Implement responsive design and accessibility
-  - [x] 13.1 Create responsive layouts
-    - Ensure all components work properly on mobile and desktop
-    - Implement touch-friendly interactions for mobile devices
-    - Add proper viewport handling and responsive breakpoints
-    - Create adaptive navigation for different screen sizes
-    - _Requirements: 8.1, 8.2, 8.4_
+  - [ ] 7.3 Create user preferences and internationalization
+    - Build preferences interface with theme and language selection
+    - Implement Next.js i18n with English and Chinese support
+    - Add user preference persistence and immediate UI updates
+    - Create accessibility and display preferences
+    - _Requirements: 8.3, 8.4, 8.5, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
 
-  - [x] 13.2 Add accessibility features
-    - Implement proper ARIA labels and keyboard navigation
-    - Add screen reader support for all interactive elements
-    - Create high contrast mode and accessibility preferences
-    - Ensure all components meet WCAG guidelines
-    - _Requirements: 8.3, 8.5_
+- [ ] 8. Implement security and middleware
+  - [ ] 8.1 Create security middleware
+    - Implement rate limiting middleware for API routes
+    - Add input validation and XSS protection
+    - Create CORS configuration and security headers
+    - Build request logging and audit functionality
+    - _Requirements: 7.1, 7.4, 7.6_
 
-- [ ] 14. Add testing and quality assurance
-  - [ ] 14.1 Write unit tests
-    - Create unit tests for all React components using React Testing Library
-    - Write tests for Zustand stores and utility functions
-    - Add tests for API client and service functions
-    - Create mock implementations for external dependencies
-    - _Requirements: 6.1, 6.3, 6.4, 6.5_
+  - [ ] 8.2 Build encryption and secure storage
+    - Implement AES encryption for API keys and sensitive data
+    - Create secure file-based storage for settings and sessions
+    - Add data integrity checking and backup mechanisms
+    - Build secure session management with timeouts
+    - _Requirements: 7.2, 7.3, 7.5_
 
-  - [ ] 14.2 Implement integration tests
+- [ ] 9. Add responsive design and accessibility
+  - [ ] 9.1 Implement responsive layouts
+    - Ensure all components work on mobile and desktop devices
+    - Create touch-friendly interactions and mobile-optimized navigation
+    - Add responsive breakpoints and adaptive component behavior
+    - Test and optimize for various screen sizes and orientations
+    - _Requirements: 8.1, 8.2, 8.6_
+
+  - [ ] 9.2 Build accessibility features
+    - Implement comprehensive keyboard navigation and ARIA labels
+    - Add screen reader support and semantic HTML structure
+    - Create high contrast themes and accessibility preferences
+    - Ensure WCAG compliance throughout the application
+    - _Requirements: 8.3, 8.5, 8.7_
+
+- [ ] 10. Integrate streaming and real-time features
+  - [ ] 10.1 Implement streaming chat responses
+    - Build streaming response handling in chat API routes
+    - Create client-side streaming message display with incremental updates
+    - Add proper error handling for interrupted streams
+    - Implement streaming cancellation and recovery
+    - _Requirements: 1.3, 5.1_
+
+  - [ ] 10.2 Add real-time tool execution feedback
+    - Create real-time progress indicators for tool execution
+    - Implement tool execution status updates and error reporting
+    - Add tool execution timeout handling and user notifications
+    - Build tool execution history and logging
+    - _Requirements: 4.5, 4.6, 5.4, 5.5, 5.6_
+
+- [ ] 11. Build testing and quality assurance
+  - [ ] 11.1 Create unit tests for components and services
+    - Write tests for React components using React Testing Library
+    - Create tests for API routes and server-side services
+    - Add tests for MCP integration and tool execution
+    - Build mock implementations for external dependencies
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+
+  - [ ] 11.2 Implement integration and end-to-end tests
     - Create end-to-end tests for complete chat workflows
-    - Add tests for settings configuration and MCP server integration
-    - Write tests for tool execution and confirmation workflows
-    - Create performance tests for large chat histories
+    - Add tests for settings configuration and provider management
+    - Build tests for tool execution and confirmation workflows
+    - Create performance tests for streaming and large chat histories
     - _Requirements: All requirements_
 
-- [ ] 15. Final integration and polish
-  - [ ] 15.1 Complete application integration
-    - Ensure all features work together seamlessly
-    - Add proper error boundaries and fallback UI
-    - Implement loading states and smooth transitions
-    - Create comprehensive error handling throughout the application
+- [ ] 12. Final integration and deployment preparation
+  - [ ] 12.1 Complete application integration and polish
+    - Ensure seamless integration between all components and services
+    - Add comprehensive error boundaries and fallback UI
+    - Implement smooth loading states and transitions
+    - Create proper error handling and user feedback throughout
     - _Requirements: 8.3, 8.4_
 
-  - [ ] 15.2 Add documentation and deployment setup
+  - [ ] 12.2 Prepare documentation and deployment
     - Create user documentation for setup and configuration
-    - Add developer documentation for extending the application
-    - Set up build and deployment scripts
-    - Create configuration examples for common MCP servers
+    - Add developer documentation for extending and maintaining the application
+    - Set up build scripts and deployment configuration
+    - Create example configurations for common MCP servers
     - _Requirements: 3.1, 3.2_
+
+## Phase 2: Migration and Cleanup
+
+- [ ] 13. Data and configuration migration
+  - [ ] 13.1 Create migration utilities
+    - Build migration scripts to transfer existing chat history to new format
+    - Create configuration migration from old settings to new unified structure
+    - Implement data validation and integrity checking during migration
+    - Add rollback mechanisms in case of migration issues
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+
+  - [ ] 13.2 User data preservation
+    - Ensure all existing chat sessions are preserved during migration
+    - Migrate user preferences and settings to new storage format
+    - Convert existing API key configurations to new encrypted storage
+    - Preserve MCP server configurations in new format
+    - _Requirements: 2.2, 7.2, 7.3, 11.5_
+
+- [ ] 14. Legacy code cleanup and optimization
+  - [ ] 14.1 Remove old architecture components
+    - Safely remove src/ directory (Vite frontend) after confirming new implementation works
+    - Clean up old backend/ directory API routes and services
+    - Remove old dependencies that are no longer needed
+    - Update package.json to reflect new unified architecture
+    - _Requirements: 6.1, 6.2_
+
+  - [ ] 14.2 Final optimization and testing
+    - Perform comprehensive testing of migrated functionality
+    - Optimize bundle size and performance of new unified application
+    - Ensure all features from old implementation work in new architecture
+    - Create regression tests to prevent functionality loss
+    - _Requirements: All requirements_
+
+- [ ] 15. Documentation and deployment finalization
+  - [ ] 15.1 Update documentation for new architecture
+    - Revise setup and installation instructions for unified Next.js app
+    - Update development workflow documentation
+    - Create migration guide for users upgrading from old version
+    - Document new configuration formats and options
+    - _Requirements: 3.1, 3.2_
+
+  - [ ] 15.2 Production deployment preparation
+    - Set up production build configuration for unified Next.js app
+    - Create deployment scripts and CI/CD pipeline updates
+    - Test production deployment with migrated data
+    - Create rollback procedures in case of deployment issues
+    - _Requirements: 6.8_
