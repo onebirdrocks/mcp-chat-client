@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST='{"src/store/settingsStore.ts -> ../i18n":{"id":1360,"files":["static/chunks/211.1f8274290edaf347.js","static/chunks/360.56b68832b72bbd1a.js"]}}';
