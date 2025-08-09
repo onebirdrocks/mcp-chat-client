@@ -29,14 +29,14 @@
     - _Requirements: 2.2, 7.2, 7.3, 11.5, 11.6_
 
 - [ ] 3. Build Next.js App Router pages and layouts
-  - [ ] 3.1 Create root layout and page structure
+  - [x] 3.1 Create root layout and page structure
     - Implement app/layout.tsx with global styles and metadata
     - Create app/page.tsx as main chat interface entry point
     - Set up app/settings/page.tsx for configuration management
     - Add app/history/page.tsx for chat session overview
     - _Requirements: 6.1, 6.2_
 
-  - [ ] 3.2 Implement Server Components for static content
+  - [x] 3.2 Implement Server Components for static content
     - Build layout components using Server Components for initial rendering
     - Create server-side data fetching for chat history and settings
     - Implement theme and language detection on server side
