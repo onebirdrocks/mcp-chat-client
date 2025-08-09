@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSecureSettingsManager } from '../../../../backend/src/services/SecureSettingsManager';
+import { getLLMService } from '../../../../lib/services';
 import { ValidationError } from '../../../../backend/src/lib/errors';
 
 export const runtime = 'nodejs';
@@ -80,8 +81,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // Test the connection by making a simple API call
-    const testResult = await testProviderConnection(provider, testApiKey, baseUrl);
+    // Test the connection using LLM service
+    const testResult = await testProviderConnectionWithLLMService(providerId || provider, provider, testApiKey, baseUrl);
     const latency = Date.now() - startTime;
     
     const response: TestConnectionResponse = {
@@ -118,9 +119,10 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Test connection to LLM provider
+ * Test connection to LLM provider using LLM service
  */
-async function testProviderConnection(
+async function testProviderConnectionWithLLMService(
+  providerId: string,
   provider: string, 
   apiKey: string, 
   baseUrl?: string
@@ -134,61 +136,91 @@ async function testProviderConnection(
   }>;
 }> {
   try {
-    const providerBaseUrl = getProviderBaseUrl(provider, baseUrl);
+    // Create a temporary provider configuration for testing
+    const settingsManager = getSecureSettingsManager();
+    const currentSettings = await settingsManager.getSettings();
     
-    // Test with a simple models list request
-    const response = await fetch(`${providerBaseUrl}/models`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      signal: AbortSignal.timeout(10000), // 10 second timeout
-    });
+    // Check if provider already exists or create temporary one
+    let testProviderId = providerId;
+    const existingProvider = currentSettings.llmProviders.find(p => p.id === providerId);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `HTTP ${response.status}`;
-      
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.error?.message || errorJson.message || errorMessage;
-      } catch {
-        // Use HTTP status if JSON parsing fails
-      }
-      
-      return {
-        success: false,
-        error: errorMessage
+    if (!existingProvider) {
+      // Create temporary provider configuration for testing
+      testProviderId = `test-${provider}-${Date.now()}`;
+      const tempProvider = {
+        id: testProviderId,
+        name: provider,
+        apiKey: apiKey,
+        baseUrl: baseUrl || getProviderBaseUrl(provider),
+        models: [],
+        enabled: true
       };
+      
+      // Temporarily add provider to settings
+      await settingsManager.updateSettings({
+        llmProviders: [...currentSettings.llmProviders, tempProvider]
+      });
     }
     
-    const data = await response.json();
-    const models = parseModelsResponse(provider, data);
-    
-    return {
-      success: true,
-      models
-    };
+    try {
+      // Use LLM service to test connection
+      const llmService = getLLMService();
+      await llmService.initialize();
+      
+      const result = await llmService.testConnection(testProviderId);
+      
+      // Clean up temporary provider if created
+      if (!existingProvider) {
+        const updatedSettings = await settingsManager.getSettings();
+        const filteredProviders = updatedSettings.llmProviders.filter(p => p.id !== testProviderId);
+        await settingsManager.updateSettings({
+          llmProviders: filteredProviders
+        });
+      }
+      
+      if (result.success && result.models) {
+        return {
+          success: true,
+          models: result.models.map(model => ({
+            id: model.id,
+            name: model.displayName || model.name,
+            supportsToolCalling: model.supportsToolCalling
+          }))
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Connection test failed'
+        };
+      }
+      
+    } catch (llmError) {
+      // Clean up temporary provider if created
+      if (!existingProvider) {
+        try {
+          const updatedSettings = await settingsManager.getSettings();
+          const filteredProviders = updatedSettings.llmProviders.filter(p => p.id !== testProviderId);
+          await settingsManager.updateSettings({
+            llmProviders: filteredProviders
+          });
+        } catch (cleanupError) {
+          console.warn('Failed to clean up temporary provider:', cleanupError);
+        }
+      }
+      throw llmError;
+    }
     
   } catch (error) {
     console.error(`Provider ${provider} connection test error:`, error);
     
+    if (error instanceof ValidationError) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+    
     if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        return {
-          success: false,
-          error: 'Connection timeout - please check your network and API endpoint'
-        };
-      }
-      
-      if (error.message.includes('fetch')) {
-        return {
-          success: false,
-          error: 'Network error - unable to reach API endpoint'
-        };
-      }
-      
       return {
         success: false,
         error: error.message

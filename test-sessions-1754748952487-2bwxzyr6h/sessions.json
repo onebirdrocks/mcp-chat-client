@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754748952487_il0ssbl64": {
+      "id": "session_1754748952487_il0ssbl64",
+      "title": "Test Session",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Hello",
+          "timestamp": "2025-08-09T14:15:52.487Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:15:52.487Z",
+      "updatedAt": "2025-08-09T14:15:52.487Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:15:52.487Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

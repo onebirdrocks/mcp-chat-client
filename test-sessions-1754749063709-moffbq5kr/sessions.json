@@ -1,0 +1,48 @@
+{
+  "sessions": {
+    "session_1754749063710_39n743z3b": {
+      "id": "session_1754749063710_39n743z3b",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Hello",
+          "timestamp": "2025-08-09T14:17:43.710Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:17:43.710Z",
+      "updatedAt": "2025-08-09T14:17:43.710Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    },
+    "session_1754749063710_p4ls39fi4": {
+      "id": "session_1754749063710_p4ls39fi4",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "msg-2",
+          "role": "user",
+          "content": "My API key is sk-1234567890abcdef",
+          "timestamp": "2025-08-09T14:17:43.710Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:17:43.710Z",
+      "updatedAt": "2025-08-09T14:17:43.710Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:17:43.709Z",
+    "totalSessions": 2,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "sessions": {
+    "session_1754748901738_9jlbur22f": {
+      "id": "session_1754748901738_9jlbur22f",
+      "title": "Updated Title",
+      "messages": [],
+      "createdAt": "2025-08-09T14:15:01.738Z",
+      "updatedAt": "2025-08-09T14:15:01.748Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 150,
+      "estimatedCost": 0.05
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:15:01.738Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

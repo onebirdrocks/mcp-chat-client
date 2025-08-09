@@ -1,0 +1,22 @@
+{
+  "sessions": {
+    "session_1754749063698_rol13ej0c": {
+      "id": "session_1754749063698_rol13ej0c",
+      "title": "Chat from 8/9/2025",
+      "messages": [],
+      "createdAt": "2025-08-09T14:17:43.698Z",
+      "updatedAt": "2025-08-09T14:17:43.703Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:17:43.698Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

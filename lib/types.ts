@@ -53,6 +53,8 @@ export interface MCPServerConfig {
   enabled: boolean;
   status?: 'connected' | 'disconnected' | 'error' | 'connecting';
   tools?: MCPTool[];
+  timeout?: number;
+  maxConcurrency?: number;
 }
 
 export interface MCPTool {
@@ -112,6 +114,22 @@ export interface TokenUsage {
   totalTokens: number;
 }
 
+export interface CostEstimate {
+  inputTokens: number;
+  outputTokens: number;
+  inputCost: number;
+  outputCost: number;
+  totalCost: number;
+  currency: string;
+}
+
+export interface LLMProviderCapabilities {
+  supportsStreaming: boolean;
+  supportsToolCalling: boolean;
+  maxTokens: number;
+  supportedModels: string[];
+}
+
 export interface RunToolRequest {
   toolCall: ToolCall;
   sessionId: string;
@@ -137,4 +155,70 @@ export interface CancelToolRequest {
 export interface CancelToolResponse {
   success: boolean;
   message: string;
+}
+
+// Session Management types
+export interface ChatSessionSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  provider: string;
+  model: string;
+  tags?: string[];
+  archived?: boolean;
+}
+
+export interface SessionSearchOptions {
+  query?: string;
+  provider?: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'createdAt' | 'updatedAt' | 'title';
+  sortOrder?: 'asc' | 'desc';
+  archived?: boolean;
+  tags?: string[];
+}
+
+export interface SessionSearchResult {
+  sessions: ChatSessionSummary[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface SessionExport {
+  version: string;
+  exportDate: string;
+  sessions: ChatSession[];
+  metadata: {
+    totalSessions: number;
+    dateRange: {
+      earliest: string;
+      latest: string;
+    };
+  };
+}
+
+export interface SessionImportResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+export interface SessionStatistics {
+  totalSessions: number;
+  lastCleanup: string;
+  providerBreakdown: Record<string, number>;
+  averageMessagesPerSession: number;
+  totalMessages: number;
+  oldestSession: string | null;
+  newestSession: string | null;
+  averageSessionAge: number;
+  sessionsWithSensitiveData: number;
+}
+
+export interface SessionCleanupResult {
+  deletedSessions: number;
+  clearedData: boolean;
 }

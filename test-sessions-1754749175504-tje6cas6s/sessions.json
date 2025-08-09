@@ -1,0 +1,53 @@
+{
+  "sessions": {
+    "session_1754749175504_40grykjcz": {
+      "id": "session_1754749175504_40grykjcz",
+      "title": "OpenAI Chat",
+      "messages": [],
+      "createdAt": "2025-08-09T14:19:35.504Z",
+      "updatedAt": "2025-08-09T14:19:35.504Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    },
+    "session_1754749175504_01yt1bhoh": {
+      "id": "session_1754749175504_01yt1bhoh",
+      "title": "DeepSeek Discussion",
+      "messages": [],
+      "createdAt": "2025-08-09T14:19:35.504Z",
+      "updatedAt": "2025-08-09T14:19:35.504Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    },
+    "session_1754749175504_7zpwso71a": {
+      "id": "session_1754749175504_7zpwso71a",
+      "title": "Special Project Chat",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "This is a unique message for testing search functionality",
+          "timestamp": "2025-08-09T14:19:35.504Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:19:35.504Z",
+      "updatedAt": "2025-08-09T14:19:35.504Z",
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:19:35.504Z",
+    "totalSessions": 3,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

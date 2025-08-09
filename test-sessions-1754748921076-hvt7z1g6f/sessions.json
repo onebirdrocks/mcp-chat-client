@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754748921076_nofyzmzwn": {
+      "id": "session_1754748921076_nofyzmzwn",
+      "title": "AI Discussion",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Tell me about artificial intelligence",
+          "timestamp": "2025-08-09T14:15:21.077Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:15:21.076Z",
+      "updatedAt": "2025-08-09T14:15:21.077Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:15:21.076Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

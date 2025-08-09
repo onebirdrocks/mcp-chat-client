@@ -64,21 +64,21 @@
     - _Requirements: 7.5, 9.6_
 
 - [ ] 5. Build server-side service layer
-  - [ ] 5.1 Create MCP Client Manager service
+  - [x] 5.1 Create MCP Client Manager service
     - Implement MCPClientManager with connection pooling for multiple servers
     - Build server lifecycle management (connect, disconnect, reconnect)
     - Create tool discovery with serverId prefixes to avoid naming conflicts
     - Add connection health monitoring and automatic recovery
     - _Requirements: 3.3, 3.4, 3.5, 3.6_
 
-  - [ ] 5.2 Implement LLM Service abstraction
+  - [x] 5.2 Implement LLM Service abstraction
     - Build LLMService supporting OpenAI, DeepSeek, and OpenRouter providers
     - Create unified interface with server-side API key management
     - Implement streaming response support and error handling
     - Add token usage tracking and cost estimation
     - _Requirements: 2.1, 2.4, 2.5, 11.1, 11.2, 11.3, 11.4_
 
-  - [ ] 5.3 Build Session Manager service
+  - [x] 5.3 Build Session Manager service
     - Create SessionManager for chat session persistence and management
     - Implement automatic session title generation using LLM
     - Add session search, filtering, and organization features

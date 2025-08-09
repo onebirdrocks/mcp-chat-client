@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754749175516_xaunwps4w": {
+      "id": "session_1754749175516_xaunwps4w",
+      "title": "This is a very long message that exceeds...",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "This is a very long message that exceeds the 40 character limit for title generation",
+          "timestamp": "2025-08-09T14:19:35.516Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:19:35.516Z",
+      "updatedAt": "2025-08-09T14:19:35.516Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:19:35.516Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

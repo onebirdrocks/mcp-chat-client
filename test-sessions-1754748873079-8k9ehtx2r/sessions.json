@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "imported-session": {
+      "id": "imported-session",
+      "title": "Imported Session",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Imported message",
+          "timestamp": "2025-08-09T14:14:33.079Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:14:33.079Z",
+      "updatedAt": "2025-08-09T14:14:33.079Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:14:33.079Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

@@ -1,66 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatRequest, Message, ToolCall } from '@/lib/types'
+import { ChatRequest } from '@/lib/types'
 import { getEnabledMCPServerIds } from '@/lib/mcp-utils'
+import { getLLMService } from '@/lib/services'
+import { getMCPClientManager } from '@/lib/services'
+import { ValidationError, InternalServerError } from '@/backend/src/lib/errors'
 import { v4 as uuidv4 } from 'uuid'
 
 export const runtime = 'nodejs'
-
-// Mock streaming LLM service - will be replaced with actual implementation in later tasks
-class MockStreamingLLMService {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async *streamChat(messages: Message[], _model: string, _tools?: unknown[]): AsyncGenerator<{
-    content?: string;
-    toolCalls?: ToolCall[];
-    done?: boolean;
-    usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
-  }> {
-    const lastMessage = messages[messages.length - 1]
-    
-    // Check if this should be a tool call response
-    if (lastMessage.content.toLowerCase().includes('tool') || lastMessage.content.toLowerCase().includes('file')) {
-      // Return tool call immediately (no streaming for tool calls)
-      yield {
-        toolCalls: [{
-          id: uuidv4(),
-          type: 'function',
-          function: {
-            name: 'filesystem.read_file',
-            arguments: JSON.stringify({ path: '/example/file.txt' })
-          },
-          serverId: 'filesystem'
-        }],
-        done: true,
-        usage: {
-          promptTokens: 50,
-          completionTokens: 20,
-          totalTokens: 70
-        }
-      }
-      return
-    }
-    
-    // Stream text response word by word
-    const response = `I understand you said: "${lastMessage.content}". This is a mock streaming response from the chat API. Each word is being streamed individually to demonstrate the streaming functionality.`
-    const words = response.split(' ')
-    
-    for (let i = 0; i < words.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 100)) // Simulate network delay
-      
-      const isLast = i === words.length - 1
-      yield {
-        content: words[i] + (isLast ? '' : ' '),
-        done: isLast,
-        usage: isLast ? {
-          promptTokens: 30,
-          completionTokens: words.length,
-          totalTokens: 30 + words.length
-        } : undefined
-      }
-    }
-  }
-}
-
-const mockStreamingLLMService = new MockStreamingLLMService()
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,24 +40,35 @@ export async function POST(request: NextRequest) {
       enabledMCPServers.includes(serverId)
     ) || []
     
-    // Mock tool definitions for enabled servers
-    const tools = allowedServers.map(serverId => ({
-      type: 'function',
-      function: {
-        name: `${serverId}.example_tool`,
-        description: `Example tool from ${serverId} server`,
-        parameters: {
-          type: 'object',
-          properties: {
-            input: {
-              type: 'string',
-              description: 'Input parameter'
+    // Get available tools from MCP servers
+    let tools: any[] = []
+    if (allowedServers.length > 0) {
+      try {
+        const mcpManager = getMCPClientManager()
+        await mcpManager.initialize()
+        
+        // Get tools from all allowed servers
+        for (const serverId of allowedServers) {
+          const serverTools = await mcpManager.getAvailableTools(serverId)
+          const formattedTools = serverTools.map(tool => ({
+            type: 'function',
+            function: {
+              name: `${serverId}.${tool.name}`,
+              description: tool.description,
+              parameters: tool.inputSchema
             }
-          },
-          required: ['input']
+          }))
+          tools.push(...formattedTools)
         }
+      } catch (error) {
+        console.warn('Failed to get MCP tools:', error)
+        // Continue without tools if MCP servers are unavailable
       }
-    }))
+    }
+    
+    // Initialize LLM service
+    const llmService = getLLMService()
+    await llmService.initialize()
     
     // Create a readable stream for Server-Sent Events
     const encoder = new TextEncoder()
@@ -130,7 +87,12 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialData)}\n\n`))
           
           // Stream LLM response
-          for await (const chunk of mockStreamingLLMService.streamChat(body.messages, body.model, tools)) {
+          for await (const chunk of llmService.chatStream(body.provider, {
+            messages: body.messages,
+            model: body.model,
+            temperature: body.temperature,
+            tools: tools.length > 0 ? tools : undefined
+          })) {
             if (chunk.toolCalls) {
               // Send tool calls for confirmation
               const toolCallData = {
@@ -168,9 +130,17 @@ export async function POST(request: NextRequest) {
           controller.close()
         } catch (error) {
           console.error('Streaming error:', error)
+          
+          let errorMessage = 'Internal server error'
+          if (error instanceof ValidationError) {
+            errorMessage = error.message
+          } else if (error instanceof InternalServerError) {
+            errorMessage = error.message
+          }
+          
           const errorData = {
             type: 'error',
-            error: 'Internal server error',
+            error: errorMessage,
             sessionId: body.sessionId,
             messageId
           }
@@ -193,6 +163,21 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Streaming chat API error:', error)
+    
+    if (error instanceof ValidationError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+    
+    if (error instanceof InternalServerError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

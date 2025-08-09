@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754748952473_vk44t4ij7": {
+      "id": "session_1754748952473_vk44t4ij7",
+      "title": "This is a test message for title generat...",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "This is a test message for title generation",
+          "timestamp": "2025-08-09T14:15:52.473Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:15:52.473Z",
+      "updatedAt": "2025-08-09T14:15:52.473Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:15:52.472Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

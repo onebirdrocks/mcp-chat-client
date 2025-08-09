@@ -1,0 +1,24 @@
+{
+  "sessions": {
+    "session_1754749063664_miskgkhfs": {
+      "id": "session_1754749063664_miskgkhfs",
+      "title": "New Chat",
+      "messages": [],
+      "createdAt": "2025-08-09T14:17:43.664Z",
+      "updatedAt": "2025-08-09T14:17:43.664Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [
+        "server1"
+      ],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:17:43.663Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

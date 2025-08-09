@@ -1,0 +1,22 @@
+{
+  "sessions": {
+    "session_1754748952445_vh4ermhod": {
+      "id": "session_1754748952445_vh4ermhod",
+      "title": "Updated Title",
+      "messages": [],
+      "createdAt": "2025-08-09T14:15:52.445Z",
+      "updatedAt": "2025-08-09T14:15:52.456Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 150,
+      "estimatedCost": 0.05
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:15:52.444Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

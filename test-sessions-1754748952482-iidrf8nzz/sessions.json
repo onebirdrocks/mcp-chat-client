@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754748952482_lwf0nf6g0": {
+      "id": "session_1754748952482_lwf0nf6g0",
+      "title": "Hello, how are you?",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Hello, how are you?",
+          "timestamp": "2025-08-09T14:15:52.482Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:15:52.482Z",
+      "updatedAt": "2025-08-09T14:15:52.485Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:15:52.482Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

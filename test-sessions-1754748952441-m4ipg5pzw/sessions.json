@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754748952441_zmuw0wmq2": {
+      "id": "session_1754748952441_zmuw0wmq2",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Hello, world!",
+          "timestamp": "2025-08-09T14:15:52.441Z"
+        }
+      ],
+      "createdAt": "2025-08-09T14:15:52.441Z",
+      "updatedAt": "2025-08-09T14:15:52.441Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-09T14:15:52.441Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}
