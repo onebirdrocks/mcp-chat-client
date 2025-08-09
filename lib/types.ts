@@ -222,3 +222,42 @@ export interface SessionCleanupResult {
   deletedSessions: number;
   clearedData: boolean;
 }
+
+// Additional types for API responses
+export interface ChatHistoryResponse {
+  sessions: ChatSessionSummary[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface Settings {
+  llmProviders: LLMProviderConfig[];
+  mcpServers: MCPServerConfig[];
+  preferences: UserPreferences;
+}
+
+export interface UserPreferences {
+  theme: Theme;
+  language: Language;
+  autoScroll: boolean;
+  soundEnabled: boolean;
+  accessibility: AccessibilitySettings;
+}
+
+export interface AccessibilitySettings {
+  highContrast: boolean;
+  reducedMotion: boolean;
+  screenReaderAnnouncements: boolean;
+  keyboardNavigation: boolean;
+  focusVisible: boolean;
+  largeText: boolean;
+}
+
+export type Theme = 'light' | 'dark' | 'system';
+export type Language = 'en' | 'zh';
+
+export interface ApiError {
+  error?: string;
+  message?: string;
+  statusCode?: number;
+}

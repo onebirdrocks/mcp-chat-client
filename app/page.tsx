@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { NavigationLayout } from '../src/components/next'
 import { getRecentSessions, getServerSettings } from '../lib/server-data'
 import { detectLanguage } from '../lib/server-utils'
 
@@ -47,35 +48,7 @@ export default async function HomePage() {
     multiProvider: 'Multi-Provider'
   }
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-foreground">MCP Chat UI</h1>
-              <span className="text-sm text-muted-foreground">
-                Model Context Protocol Chat Interface
-              </span>
-            </div>
-            <nav className="flex items-center space-x-4">
-              <Link
-                href="/history"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                History
-              </Link>
-              <Link
-                href="/settings"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Settings
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+    <NavigationLayout>
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -249,15 +222,6 @@ export default async function HomePage() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="text-center text-sm text-muted-foreground">
-            <p>MCP Chat UI - A secure interface for Model Context Protocol servers</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </NavigationLayout>
   )
 }

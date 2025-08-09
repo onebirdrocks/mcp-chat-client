@@ -1,5 +1,6 @@
 export { default as Layout } from './Layout';
 export { default as AppLayout } from './AppLayout';
+export { default as ChatInterface } from './ChatInterface';
 export { default as Chat } from './Chat';
 export { default as ServerList } from './ServerList';
 export { default as Sidebar } from './Sidebar';
@@ -18,3 +19,6 @@ export { default as ToolConfirmationDialog } from './ToolConfirmationDialog';
 
 // UI Components
 export * from './ui';
+
+// Next.js App Router Components
+export * from './next';

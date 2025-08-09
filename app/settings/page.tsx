@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { NavigationLayout } from '../../src/components/next'
 import { getServerSettings } from '../../lib/server-data'
 import { detectLanguage } from '../../lib/server-utils'
 
@@ -56,32 +57,7 @@ export default async function SettingsPage() {
     sessionNote: 'When creating new chat sessions, you\'ll select from providers configured here. All credentials remain securely stored on the server.'
   }
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {text.backToChat}
-              </Link>
-              <h1 className="text-2xl font-bold text-foreground">{text.settings}</h1>
-            </div>
-            <nav className="flex items-center space-x-4">
-              <Link
-                href="/history"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {text.history}
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+    <NavigationLayout>
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -208,6 +184,6 @@ export default async function SettingsPage() {
           </div>
         </div>
       </main>
-    </div>
+    </NavigationLayout>
   )
 }

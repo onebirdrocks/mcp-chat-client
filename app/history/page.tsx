@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { NavigationLayout } from '../../src/components/next'
 import { getChatHistory } from '../../lib/server-data'
 import { detectLanguage } from '../../lib/server-utils'
 
@@ -60,32 +61,7 @@ export default async function HistoryPage() {
     startNewChat: 'Start New Chat'
   }
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {text.backToChat}
-              </Link>
-              <h1 className="text-2xl font-bold text-foreground">{text.chatHistory}</h1>
-            </div>
-            <nav className="flex items-center space-x-4">
-              <Link
-                href="/settings"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {text.settings}
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+    <NavigationLayout>
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -233,6 +209,6 @@ export default async function HistoryPage() {
           </div>
         </div>
       </main>
-    </div>
+    </NavigationLayout>
   )
 }

@@ -73,9 +73,7 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <div id="root" className="relative flex min-h-screen flex-col">
-          <main className="flex-1">
-            {children}
-          </main>
+          {children}
         </div>
       </body>
     </html>

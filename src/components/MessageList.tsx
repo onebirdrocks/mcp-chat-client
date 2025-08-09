@@ -8,6 +8,7 @@ export interface MessageListProps {
   messages: Message[];
   isLoading?: boolean;
   autoScroll?: boolean;
+  streamingMessage?: string;
   onCopyMessage?: (content: string) => void;
   onRegenerateMessage?: (messageId: string) => void;
   onDeleteMessage?: (messageId: string) => void;
@@ -18,6 +19,7 @@ const MessageList: React.FC<MessageListProps> = ({
   messages,
   isLoading = false,
   autoScroll = true,
+  streamingMessage,
   onCopyMessage,
   onRegenerateMessage,
   onDeleteMessage,
@@ -28,6 +30,7 @@ const MessageList: React.FC<MessageListProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [isNearBottom, setIsNearBottom] = useState(true);
+
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -159,8 +162,41 @@ const MessageList: React.FC<MessageListProps> = ({
             </div>
           ))}
 
+          {/* Streaming message indicator */}
+          {streamingMessage && (
+            <div className="flex gap-2 sm:gap-3 p-3 sm:p-4">
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-6 h-6 sm:w-8 sm:h-8">
+                  <div className="w-full h-full bg-green-500 rounded-full flex items-center justify-center text-white">
+                    <svg className="w-3 h-3 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                    Assistant
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
+                    <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                </div>
+                <div className="prose prose-sm max-w-none dark:prose-invert prose-gray">
+                  <div className="whitespace-pre-wrap break-words">
+                    {streamingMessage}
+                    <span className="inline-block w-2 h-4 bg-green-500 animate-pulse ml-1"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Loading indicator */}
-          {isLoading && (
+          {isLoading && !streamingMessage && (
             <div className="flex items-center justify-center p-4">
               <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                 <Spinner size="sm" />

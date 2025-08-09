@@ -1,14 +1,5 @@
 import { useState, useCallback } from 'react';
-
-export interface ChatSession {
-  id: string;
-  title: string;
-  createdAt: Date;
-  updatedAt: Date;
-  messageCount: number;
-  provider: string;
-  model: string;
-}
+import type { ChatSession } from '../../lib/types';
 
 export const useChatSessions = () => {
   // Mock data - in real implementation, this would come from a store/API
@@ -16,29 +7,32 @@ export const useChatSessions = () => {
     {
       id: '1',
       title: 'Getting started with MCP',
+      messages: [],
       createdAt: new Date('2024-01-15'),
       updatedAt: new Date('2024-01-15'),
-      messageCount: 12,
       provider: 'openai',
       model: 'gpt-4',
+      mcpServers: [],
     },
     {
       id: '2', 
       title: 'File processing automation',
+      messages: [],
       createdAt: new Date('2024-01-14'),
       updatedAt: new Date('2024-01-14'),
-      messageCount: 8,
       provider: 'deepseek',
       model: 'deepseek-chat',
+      mcpServers: [],
     },
     {
       id: '3',
       title: 'Data analysis workflow',
+      messages: [],
       createdAt: new Date('2024-01-13'),
       updatedAt: new Date('2024-01-13'),
-      messageCount: 15,
       provider: 'openrouter',
       model: 'anthropic/claude-3-sonnet',
+      mcpServers: [],
     },
   ]);
 
@@ -46,11 +40,12 @@ export const useChatSessions = () => {
     const newSession: ChatSession = {
       id: Date.now().toString(),
       title: 'New Chat',
+      messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
-      messageCount: 0,
       provider,
       model,
+      mcpServers: [],
     };
     
     setChatSessions(sessions => [newSession, ...sessions]);

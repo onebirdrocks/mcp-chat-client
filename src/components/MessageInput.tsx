@@ -84,6 +84,20 @@ const MessageInput: React.FC<MessageInputProps> = ({
       setMessage('');
       textareaRef.current?.blur();
     }
+
+    // Handle Ctrl/Cmd + Enter to send message (alternative shortcut)
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+
+    // Handle Tab key for accessibility
+    if (e.key === 'Tab' && !e.shiftKey && message.trim()) {
+      // Allow normal tab behavior, but announce that Enter sends the message
+      setTimeout(() => {
+        screenReaderUtils.announceSuccess('Press Enter to send message', 'Input');
+      }, 100);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -208,7 +222,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <span className="hidden sm:inline">
-                Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Enter</kbd> to send, 
+                Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Enter</kbd> or 
+                <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs ml-1">Ctrl+Enter</kbd> to send, 
                 <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs ml-1">Shift+Enter</kbd> for new line
               </span>
               <span className="sm:hidden">
@@ -219,12 +234,23 @@ const MessageInput: React.FC<MessageInputProps> = ({
               </span>
             </div>
             
-            {/* Word count */}
-            {message.trim().length > 0 && (
-              <span className="text-gray-400 dark:text-gray-500 text-right" aria-live="polite">
-                {message.trim().split(/\s+/).length} word{message.trim().split(/\s+/).length !== 1 ? 's' : ''}
-              </span>
-            )}
+            {/* Word and character count */}
+            <div className="flex items-center gap-4 text-right">
+              {message.trim().length > 0 && (
+                <span className="text-gray-400 dark:text-gray-500" aria-live="polite">
+                  {message.trim().split(/\s+/).length} word{message.trim().split(/\s+/).length !== 1 ? 's' : ''}
+                </span>
+              )}
+              {(isNearLimit || characterCount >= maxLength) && (
+                <span className={`${
+                  characterCount >= maxLength 
+                    ? 'text-red-500 dark:text-red-400' 
+                    : 'text-yellow-600 dark:text-yellow-400'
+                }`} aria-live="polite">
+                  {characterCount}/{maxLength}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
