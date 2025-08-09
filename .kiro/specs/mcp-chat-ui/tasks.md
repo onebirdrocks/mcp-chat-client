@@ -16,13 +16,13 @@
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.8_
 
 - [ ] 2. Create core configuration and data management
-  - [ ] 2.1 Implement MCP server configuration system
+  - [x] 2.1 Implement MCP server configuration system
     - Create config/mcp.config.json with Cursor-compatible format
     - Build configuration validation using Zod schemas
     - Implement configuration loading and hot-reload functionality
     - _Requirements: 3.1, 3.2, 3.6_
 
-  - [ ] 2.2 Set up server-side settings and encryption
+  - [x] 2.2 Set up server-side settings and encryption
     - Create secure settings storage with AES encryption for API keys
     - Implement settings persistence in backend data directory
     - Build settings validation and integrity checking

@@ -82,7 +82,7 @@ export class SecureSettingsManager {
           
           if (provider.apiKey) {
             // Check if API key is already masked (unchanged from frontend)
-            if (provider.apiKey.includes('*')) {
+            if (provider.apiKey.includes('*') || provider.apiKey.includes('•')) {
               // Keep existing encrypted key
               if (existingProvider) {
                 encryptedApiKey = existingProvider.apiKey;

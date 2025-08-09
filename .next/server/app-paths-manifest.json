@@ -4,7 +4,7 @@
   "/api/chat/route": "app/api/chat/route.js",
   "/api/settings/route": "app/api/settings/route.js",
   "/chat/page": "app/chat/page.js",
+  "/settings/page": "app/settings/page.js",
   "/history/page": "app/history/page.js",
-  "/page": "app/page.js",
-  "/settings/page": "app/settings/page.js"
+  "/page": "app/page.js"
 }

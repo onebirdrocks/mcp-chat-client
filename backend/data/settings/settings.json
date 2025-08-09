@@ -28,7 +28,7 @@
     "theme": "dark",
     "language": "en",
     "autoScroll": true,
-    "soundEnabled": true,
+    "soundEnabled": false,
     "accessibility": {
       "highContrast": false,
       "reducedMotion": false,
