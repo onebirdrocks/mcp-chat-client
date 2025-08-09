@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
-import path from 'path';
-import { ChatSession, ChatSessionSummary, Message, LLMProvider } from '@/types';
-import { NotFoundError, InternalServerError, ValidationError } from '@/lib/errors';
-import { getEncryptionService } from '@/lib/encryption';
+import * as path from 'path';
+import { ChatSession, ChatSessionSummary, Message, LLMProvider } from '../types';
+import { NotFoundError, InternalServerError, ValidationError } from '../lib/errors';
+import { getEncryptionService } from '../lib/encryption';
 
 export interface SessionSearchOptions {
   query?: string;
@@ -200,7 +200,7 @@ export class SessionManager {
       const searchQuery = query.toLowerCase();
       sessions = sessions.filter(session => 
         session.title.toLowerCase().includes(searchQuery) ||
-        session.messages.some(msg => 
+        session.messages.some((msg: any) => 
           msg.content.toLowerCase().includes(searchQuery)
         )
       );
@@ -270,9 +270,9 @@ export class SessionManager {
     try {
       // Get first few messages for context
       const contextMessages = session.messages
-        .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg: any) => msg.role === 'user' || msg.role === 'assistant')
         .slice(0, 4)
-        .map(msg => `${msg.role}: ${msg.content.substring(0, 200)}`)
+        .map((msg: any) => `${msg.role}: ${msg.content.substring(0, 200)}`)
         .join('\n');
 
       const titlePrompt = `Based on this conversation, generate a concise, descriptive title (max 50 characters):
@@ -412,7 +412,7 @@ Title:`;
       ...session,
       messages: includeSystemMessages 
         ? session.messages 
-        : session.messages.filter(msg => msg.role !== 'system'),
+        : session.messages.filter((msg: any) => msg.role !== 'system'),
     }));
     
     // Calculate metadata
@@ -473,7 +473,7 @@ Title:`;
             // Ensure dates are Date objects
             createdAt: new Date(session.createdAt),
             updatedAt: new Date(session.updatedAt),
-            messages: session.messages.map(msg => ({
+            messages: session.messages.map((msg: any) => ({
               ...msg,
               timestamp: new Date(msg.timestamp),
             })),
@@ -535,7 +535,7 @@ Title:`;
     let clearedData = false;
     if (clearAllSensitiveData) {
       Object.values(this.storage.sessions).forEach(session => {
-        session.messages = session.messages.map(message => ({
+        session.messages = session.messages.map((message: any) => ({
           ...message,
           // Remove any potential sensitive content patterns
           content: this.sanitizeMessageContent(message.content),
@@ -590,7 +590,7 @@ Title:`;
     // Count sessions that might contain sensitive data (API keys, tokens, etc.)
     const sensitivePatterns = [/api[_-]?key/i, /token/i, /secret/i, /password/i];
     const sessionsWithSensitiveData = sessions.filter(session =>
-      session.messages.some(message =>
+      session.messages.some((message: any) =>
         sensitivePatterns.some(pattern => pattern.test(message.content))
       )
     ).length;
@@ -624,7 +624,7 @@ Title:`;
   }
 
   private generateFallbackTitle(session: ChatSession): string {
-    const userMessages = session.messages.filter(msg => msg.role === 'user');
+    const userMessages = session.messages.filter((msg: any) => msg.role === 'user');
     if (userMessages.length > 0) {
       const originalMessage = userMessages[0].content;
       const truncatedMessage = originalMessage.substring(0, 40);

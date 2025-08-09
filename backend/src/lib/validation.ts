@@ -1,5 +1,5 @@
 import { ValidationError } from './errors';
-import { ChatRequest, RunToolRequest, LLMProvider } from '@/types';
+import { ChatRequest, RunToolRequest, LLMProvider } from '../types';
 
 export function validateChatRequest(data: any): ChatRequest {
   if (!data || typeof data !== 'object') {
@@ -208,7 +208,8 @@ export function validateSettings(data: any) {
       try {
         validateMCPServerConfig(server);
       } catch (error) {
-        throw new ValidationError(`MCP server at index ${index}: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new ValidationError(`MCP server at index ${index}: ${errorMessage}`);
       }
     });
   }
@@ -218,7 +219,8 @@ export function validateSettings(data: any) {
     try {
       validateUserPreferences(data.preferences);
     } catch (error) {
-      throw new ValidationError(`User preferences: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ValidationError(`User preferences: ${errorMessage}`);
     }
   }
 

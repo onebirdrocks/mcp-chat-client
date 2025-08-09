@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
-import path from 'path';
-import { Settings, LLMProviderConfig, MCPServerConfig, UserPreferences } from '@/types';
-import { getEncryptionService } from '@/lib/encryption';
-import { InternalServerError, ValidationError } from '@/lib/errors';
+import * as path from 'path';
+import { Settings, LLMProviderConfig, MCPServerConfig, UserPreferences } from '../types';
+import { getEncryptionService } from '../lib/encryption';
+import { InternalServerError, ValidationError } from '../lib/errors';
 
 export interface SecureSettings extends Omit<Settings, 'llmProviders'> {
   llmProviders: SecureLLMProviderConfig[];
@@ -171,7 +171,7 @@ export class SecureSettingsManager {
       exportDate: new Date().toISOString(),
       settings: {
         preferences: this.settings.preferences,
-        mcpServers: this.settings.mcpServers.map(server => ({
+        mcpServers: this.settings.mcpServers.map((server: any) => ({
           ...server,
           // Remove any sensitive environment variables
           env: server.env ? this.sanitizeEnvironmentVariables(server.env) : undefined,
@@ -224,7 +224,7 @@ export class SecureSettingsManager {
     lastUpdated: string;
   } {
     const providersWithKeys = this.settings.llmProviders.filter(p => p.apiKey).length;
-    const enabledMcpServers = this.settings.mcpServers.filter(s => s.enabled).length;
+    const enabledMcpServers = this.settings.mcpServers.filter((s: any) => s.enabled).length;
 
     return {
       totalProviders: this.settings.llmProviders.length,

@@ -1,4 +1,4 @@
-import { readFile, access, readdir, stat } from 'fs/promises'
+import { readFile, access, readdir } from 'fs/promises'
 import { join } from 'path'
 
 // Types for server-side data
@@ -167,14 +167,17 @@ export async function getServerSettings(): Promise<ServerSettings> {
       const mcpConfig = JSON.parse(mcpConfigContent)
       
       if (mcpConfig.mcpServers) {
-        mcpServers = Object.entries(mcpConfig.mcpServers).map(([id, config]: [string, any]) => ({
-          id,
-          name: id,
-          displayName: config.displayName || id,
-          enabled: config.enabled !== false,
-          status: 'disconnected' as const, // Will be updated by connection manager
-          toolCount: 0 // Will be populated by tool discovery
-        }))
+        mcpServers = Object.entries(mcpConfig.mcpServers).map(([id, config]: [string, unknown]) => {
+          const configObj = config as { displayName?: string; enabled?: boolean }
+          return {
+            id,
+            name: id,
+            displayName: configObj.displayName || id,
+            enabled: configObj.enabled !== false,
+            status: 'disconnected' as const, // Will be updated by connection manager
+            toolCount: 0 // Will be populated by tool discovery
+          }
+        })
       }
     } catch (error) {
       console.warn('Failed to read MCP configuration:', error)

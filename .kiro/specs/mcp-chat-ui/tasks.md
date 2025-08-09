@@ -43,21 +43,21 @@
     - _Requirements: 6.1, 6.2, 10.1, 10.2_
 
 - [ ] 4. Develop Route Handlers for API functionality
-  - [ ] 4.1 Create core chat API routes
+  - [x] 4.1 Create core chat API routes
     - Build app/api/chat/route.ts for message processing with tool call support
     - Implement app/api/run-tool/route.ts for confirmed tool execution
     - Create app/api/cancel-tool/route.ts for tool call cancellation
     - Add streaming support in app/api/chat/stream/route.ts
     - _Requirements: 1.2, 1.3, 4.3, 4.4, 5.1, 5.2_
 
-  - [ ] 4.2 Build settings and session management APIs
+  - [x] 4.2 Build settings and session management APIs
     - Create app/api/settings/route.ts for configuration management
     - Implement app/api/settings/test-connection/route.ts for provider testing
     - Build app/api/chat-history/route.ts for session management
     - Add app/api/sessions/route.ts for session CRUD operations
     - _Requirements: 2.2, 2.7, 9.1, 9.2, 9.3, 9.4_
 
-  - [ ] 4.3 Implement data export and privacy APIs
+  - [x] 4.3 Implement data export and privacy APIs
     - Create app/api/export/chat-history/route.ts for data export
     - Build app/api/privacy/cleanup/route.ts for data cleanup
     - Add app/api/export/settings/route.ts for settings backup

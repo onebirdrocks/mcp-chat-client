@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiError } from '@/types';
+import { ApiError } from '../types';
 
 export class AppError extends Error {
   public statusCode: number;
