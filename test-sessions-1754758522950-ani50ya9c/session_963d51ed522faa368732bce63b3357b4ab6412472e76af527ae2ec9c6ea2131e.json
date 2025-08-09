@@ -1,0 +1,10 @@
+{
+  "data": "{\n  \"id\": \"963d51ed522faa368732bce63b3357b4ab6412472e76af527ae2ec9c6ea2131e\",\n  \"userId\": \"user123\",\n  \"data\": {\n    \"session\": 1\n  },\n  \"createdAt\": \"2025-08-09T16:55:22.951Z\",\n  \"lastAccessedAt\": \"2025-08-09T16:55:22.951Z\",\n  \"expiresAt\": \"2025-08-09T17:25:22.951Z\",\n  \"encrypted\": false\n}",
+  "metadata": {
+    "version": "1.0.0",
+    "createdAt": "2025-08-09T16:55:22.951Z",
+    "updatedAt": "2025-08-09T16:55:22.951Z",
+    "hash": "564d38639c6907c40c103c3e162501fad230bb4e29d2c00d009281ee804dd34f",
+    "encrypted": false
+  }
+}

@@ -130,14 +130,14 @@
     - _Requirements: 8.3, 8.4, 8.5, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
 
 - [ ] 8. Implement security and middleware
-  - [ ] 8.1 Create security middleware
+  - [x] 8.1 Create security middleware
     - Implement rate limiting middleware for API routes
     - Add input validation and XSS protection
     - Create CORS configuration and security headers
     - Build request logging and audit functionality
     - _Requirements: 7.1, 7.4, 7.6_
 
-  - [ ] 8.2 Build encryption and secure storage
+  - [x] 8.2 Build encryption and secure storage
     - Implement AES encryption for API keys and sensitive data
     - Create secure file-based storage for settings and sessions
     - Add data integrity checking and backup mechanisms
