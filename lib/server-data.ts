@@ -158,7 +158,7 @@ export async function getChatHistory(): Promise<{
  */
 export async function getServerSettings(): Promise<ServerSettings> {
   try {
-    // Read MCP configuration
+    // Read MCP configuration and get real-time status
     const mcpConfigPath = join(process.cwd(), 'config', 'mcp.config.json')
     let mcpServers: ServerSettings['mcpServers'] = []
     
@@ -167,15 +167,28 @@ export async function getServerSettings(): Promise<ServerSettings> {
       const mcpConfig = JSON.parse(mcpConfigContent)
       
       if (mcpConfig.mcpServers) {
+        // Try to get MCP client manager for real-time status
+        let connectionStatuses: Record<string, any> = {}
+        try {
+          const { getMCPClientManager } = await import('./services/MCPClientManager')
+          const clientManager = getMCPClientManager()
+          connectionStatuses = clientManager.getConnectionStatuses()
+        } catch (error) {
+          console.warn('Failed to get MCP connection statuses:', error)
+        }
+        
         mcpServers = Object.entries(mcpConfig.mcpServers).map(([id, config]: [string, unknown]) => {
-          const configObj = config as { displayName?: string; enabled?: boolean }
+          const configObj = config as { displayName?: string; disabled?: boolean }
+          const status = connectionStatuses[id]
+          
           return {
             id,
             name: id,
             displayName: configObj.displayName || id,
-            enabled: configObj.enabled !== false,
-            status: 'disconnected' as const, // Will be updated by connection manager
-            toolCount: 0 // Will be populated by tool discovery
+            enabled: !configObj.disabled,
+            status: status ? (status.status === 'healthy' ? 'connected' : 
+                            status.status === 'unhealthy' ? 'error' : 'disconnected') : 'disconnected',
+            toolCount: status?.toolCount || 0
           }
         })
       }

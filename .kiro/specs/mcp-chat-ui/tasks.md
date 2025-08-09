@@ -108,21 +108,21 @@
     - _Requirements: 8.1, 8.2, 8.6, 9.2, 9.3, 9.4, 11.7_
 
 - [ ] 7. Create settings and configuration interface
-  - [ ] 7.1 Build LLM provider management
+  - [x] 7.1 Build LLM provider management
     - Create provider configuration interface showing available providers
     - Implement connection testing for configured providers
     - Display provider status and available models without exposing API keys
     - Add provider enable/disable functionality
     - _Requirements: 2.1, 2.3, 2.6, 11.1, 11.2, 11.3, 11.4, 11.5_
 
-  - [ ] 7.2 Implement MCP server configuration
+  - [x] 7.2 Implement MCP server configuration
     - Build MCP server management interface with JSON editor
     - Show server connection status and available tools
     - Add server configuration validation and testing
     - Create server enable/disable and troubleshooting features
     - _Requirements: 3.1, 3.2, 3.5, 3.6_
 
-  - [ ] 7.3 Create user preferences and internationalization
+  - [x] 7.3 Create user preferences and internationalization
     - Build preferences interface with theme and language selection
     - Implement Next.js i18n with English and Chinese support
     - Add user preference persistence and immediate UI updates

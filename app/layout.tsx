@@ -75,6 +75,25 @@ export default async function RootLayout({
         <div id="root" className="relative flex min-h-screen flex-col">
           {children}
         </div>
+        
+        {/* Initialize client-side features */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Initialize accessibility features
+              if (typeof window !== 'undefined') {
+                // Set up skip links
+                const skipLinks = document.createElement('div');
+                skipLinks.className = 'sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 z-50';
+                skipLinks.innerHTML = \`
+                  <a href="#main-content" class="bg-blue-600 text-white px-4 py-2 rounded-md">Skip to main content</a>
+                  <a href="#navigation" class="bg-blue-600 text-white px-4 py-2 rounded-md ml-2">Skip to navigation</a>
+                \`;
+                document.body.insertBefore(skipLinks, document.body.firstChild);
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )

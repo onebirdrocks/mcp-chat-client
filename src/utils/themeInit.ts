@@ -3,7 +3,7 @@
  * This should be called as early as possible to prevent theme flashing
  */
 
-export const initTheme = () => {
+export const initializeTheme = () => {
   // Get saved theme from localStorage
   const savedTheme = localStorage.getItem('mcp-chat-ui-theme') || 'system';
   
@@ -26,5 +26,8 @@ export const initTheme = () => {
 
 // Call immediately when this module is loaded
 if (typeof window !== 'undefined') {
-  initTheme();
+  initializeTheme();
 }
+
+// Legacy export for backward compatibility
+export const initTheme = initializeTheme;

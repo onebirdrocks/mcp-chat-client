@@ -1,433 +1,718 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button, Input, Textarea, Card, CardHeader, CardTitle, CardContent, Alert } from '@/components/ui';
-import { useSettingsStore } from '@/store/settingsStore';
-import type { MCPServerConfig as MCPServerConfigType } from '@/types';
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { MCPServerConfig as MCPServerConfigType, MCPTool } from '../../lib/types'
 
 interface MCPServerConfigProps {
-  className?: string;
+  language?: 'en' | 'zh'
 }
 
-const MCPServerConfig: React.FC<MCPServerConfigProps> = ({ className = '' }) => {
-  const { t } = useTranslation();
-  const {
-    mcpServers,
-    addMCPServer,
-    updateMCPServer,
-    removeMCPServer,
-    toggleMCPServer,
-    testMCPConnection,
-    importMCPServers,
-  } = useSettingsStore();
+interface MCPServerStatus {
+  serverId: string
+  status: 'healthy' | 'unhealthy' | 'unknown'
+  lastCheck: Date
+  responseTime?: number
+  error?: string
+  toolCount: number
+  uptime?: number
+}
 
-  // Form state for adding/editing servers
-  const [isAddingServer, setIsAddingServer] = useState(false);
-  const [editingServerId, setEditingServerId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
+interface MCPConfigData {
+  mcpServers: Record<string, MCPServerConfigType>
+}
+
+export default function MCPServerConfig({ language = 'en' }: MCPServerConfigProps) {
+  const [servers, setServers] = useState<Record<string, MCPServerConfigType>>({})
+  const [serverStatuses, setServerStatuses] = useState<Record<string, MCPServerStatus>>({})
+  const [serverTools, setServerTools] = useState<Record<string, MCPTool[]>>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [editingServer, setEditingServer] = useState<string | null>(null)
+  const [editingConfig, setEditingConfig] = useState<string>('')
+  const [showAddServer, setShowAddServer] = useState(false)
+  const [newServerConfig, setNewServerConfig] = useState({
+    id: '',
     command: '',
     args: [] as string[],
     env: {} as Record<string, string>,
-    enabled: true,
-  });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [testingConnections, setTestingConnections] = useState<Set<string>>(new Set());
-  const [connectionResults, setConnectionResults] = useState<Record<string, { success: boolean; error?: string; timestamp: number }>>({});
-  const [jsonImportText, setJsonImportText] = useState('');
-  const [importError, setImportError] = useState('');
+    disabled: false,
+    timeout: 30000,
+    maxConcurrency: 5
+  })
+  const [testingConnection, setTestingConnection] = useState<string | null>(null)
 
-  // Reset form when adding new server
-  const handleAddServer = () => {
-    setFormData({
-      name: '',
-      command: '',
-      args: [],
-      env: {},
-      enabled: true,
-    });
-    setFormErrors({});
-    setIsAddingServer(true);
-    setEditingServerId(null);
-  };
+  // Localized text
+  const text = language === 'zh' ? {
+    mcpServers: 'MCP 服务器',
+    serverConfiguration: 'MCP 服务器配置',
+    addServer: '添加服务器',
+    editServer: '编辑服务器',
+    deleteServer: '删除服务器',
+    testConnection: '测试连接',
+    enableServer: '启用服务器',
+    disableServer: '禁用服务器',
+    serverStatus: '服务器状态',
+    availableTools: '可用工具',
+    connectionStatus: '连接状态',
+    lastCheck: '最后检查',
+    responseTime: '响应时间',
+    uptime: '运行时间',
+    toolCount: '工具数量',
+    serverDetails: '服务器详情',
+    command: '命令',
+    arguments: '参数',
+    environment: '环境变量',
+    timeout: '超时时间',
+    maxConcurrency: '最大并发',
+    serverId: '服务器ID',
+    save: '保存',
+    cancel: '取消',
+    delete: '删除',
+    edit: '编辑',
+    test: '测试',
+    enable: '启用',
+    disable: '禁用',
+    refresh: '刷新',
+    connected: '已连接',
+    disconnected: '已断开',
+    error: '错误',
+    connecting: '连接中',
+    healthy: '健康',
+    unhealthy: '不健康',
+    unknown: '未知',
+    noServers: '未配置服务器',
+    noTools: '无可用工具',
+    configurationEditor: '配置编辑器',
+    jsonConfiguration: 'JSON 配置',
+    invalidJson: '无效的 JSON 格式',
+    serverAdded: '服务器已添加',
+    serverUpdated: '服务器已更新',
+    serverDeleted: '服务器已删除',
+    connectionTested: '连接已测试',
+    errorOccurred: '发生错误',
+    confirmDelete: '确认删除',
+    deleteConfirmation: '确定要删除服务器 "{name}" 吗？此操作无法撤销。',
+    troubleshooting: '故障排除',
+    troubleshootingTips: '故障排除提示',
+    checkCommand: '检查命令路径是否正确',
+    checkArgs: '验证参数格式',
+    checkEnv: '确认环境变量设置',
+    checkPermissions: '检查文件权限',
+    viewLogs: '查看日志',
+    reconnect: '重新连接',
+    ms: '毫秒',
+    seconds: '秒',
+    minutes: '分钟',
+    hours: '小时',
+    days: '天'
+  } : {
+    mcpServers: 'MCP Servers',
+    serverConfiguration: 'MCP Server Configuration',
+    addServer: 'Add Server',
+    editServer: 'Edit Server',
+    deleteServer: 'Delete Server',
+    testConnection: 'Test Connection',
+    enableServer: 'Enable Server',
+    disableServer: 'Disable Server',
+    serverStatus: 'Server Status',
+    availableTools: 'Available Tools',
+    connectionStatus: 'Connection Status',
+    lastCheck: 'Last Check',
+    responseTime: 'Response Time',
+    uptime: 'Uptime',
+    toolCount: 'Tool Count',
+    serverDetails: 'Server Details',
+    command: 'Command',
+    arguments: 'Arguments',
+    environment: 'Environment Variables',
+    timeout: 'Timeout',
+    maxConcurrency: 'Max Concurrency',
+    serverId: 'Server ID',
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+    test: 'Test',
+    enable: 'Enable',
+    disable: 'Disable',
+    refresh: 'Refresh',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    error: 'Error',
+    connecting: 'Connecting',
+    healthy: 'Healthy',
+    unhealthy: 'Unhealthy',
+    unknown: 'Unknown',
+    noServers: 'No servers configured',
+    noTools: 'No tools available',
+    configurationEditor: 'Configuration Editor',
+    jsonConfiguration: 'JSON Configuration',
+    invalidJson: 'Invalid JSON format',
+    serverAdded: 'Server added',
+    serverUpdated: 'Server updated',
+    serverDeleted: 'Server deleted',
+    connectionTested: 'Connection tested',
+    errorOccurred: 'An error occurred',
+    confirmDelete: 'Confirm Delete',
+    deleteConfirmation: 'Are you sure you want to delete server "{name}"? This action cannot be undone.',
+    troubleshooting: 'Troubleshooting',
+    troubleshootingTips: 'Troubleshooting Tips',
+    checkCommand: 'Check if command path is correct',
+    checkArgs: 'Verify argument format',
+    checkEnv: 'Confirm environment variable settings',
+    checkPermissions: 'Check file permissions',
+    viewLogs: 'View Logs',
+    reconnect: 'Reconnect',
+    ms: 'ms',
+    seconds: 'seconds',
+    minutes: 'minutes',
+    hours: 'hours',
+    days: 'days'
+  }
 
-  // Edit existing server
-  const handleEditServer = (server: MCPServerConfigType) => {
-    setFormData({
-      name: server.name,
-      command: server.command,
-      args: server.args,
-      env: server.env || {},
-      enabled: server.enabled,
-    });
-    setFormErrors({});
-    setIsAddingServer(false);
-    setEditingServerId(server.id);
-  };
+  // Load server configurations and statuses
+  useEffect(() => {
+    loadServers()
+    loadServerStatuses()
+    loadServerTools()
+  }, [])
 
-  // Cancel form
-  const handleCancelForm = () => {
-    setIsAddingServer(false);
-    setEditingServerId(null);
-    setFormData({
-      name: '',
-      command: '',
-      args: [],
-      env: {},
-      enabled: true,
-    });
-    setFormErrors({});
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      errors.name = t('errors.invalidConfiguration');
-    }
-
-    if (!formData.command.trim()) {
-      errors.command = t('errors.invalidConfiguration');
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Save server
-  const handleSaveServer = () => {
-    if (!validateForm()) return;
-
-    const serverData = {
-      name: formData.name.trim(),
-      command: formData.command.trim(),
-      args: formData.args,
-      env: formData.env,
-      enabled: formData.enabled,
-    };
-
-    if (editingServerId) {
-      updateMCPServer(editingServerId, serverData);
-    } else {
-      addMCPServer(serverData);
-    }
-
-    handleCancelForm();
-  };
-
-  // Test connection
-  const handleTestConnection = async (serverId: string) => {
-    setTestingConnections(prev => new Set(prev).add(serverId));
-    
+  const loadServers = async () => {
     try {
-      const success = await testMCPConnection(serverId);
-      setConnectionResults(prev => ({
-        ...prev,
-        [serverId]: {
-          success,
-          timestamp: Date.now(),
-        }
-      }));
-    } catch (error) {
-      console.error('Connection test failed:', error);
-      setConnectionResults(prev => ({
-        ...prev,
-        [serverId]: {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: Date.now(),
-        }
-      }));
-    } finally {
-      setTestingConnections(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(serverId);
-        return newSet;
-      });
-    }
-  };
-
-  // Handle JSON import
-  const handleJsonImport = async () => {
-    setImportError('');
-    try {
-      const success = await importMCPServers(jsonImportText);
-      if (success) {
-        setJsonImportText('');
-        setImportError('');
-      } else {
-        setImportError(t('errors.invalidConfiguration'));
+      setLoading(true)
+      const response = await fetch('/api/settings/mcp-servers')
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-    } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'Import failed');
+      const data: MCPConfigData = await response.json()
+      setServers(data.mcpServers || {})
+    } catch (err) {
+      console.error('Failed to load MCP servers:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load servers')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  const loadServerStatuses = async () => {
+    try {
+      const response = await fetch('/api/settings/mcp-servers/status')
+      if (response.ok) {
+        const statuses = await response.json()
+        setServerStatuses(statuses)
+      }
+    } catch (err) {
+      console.error('Failed to load server statuses:', err)
+    }
+  }
+
+  const loadServerTools = async () => {
+    try {
+      const response = await fetch('/api/settings/mcp-servers/tools')
+      if (response.ok) {
+        const tools = await response.json()
+        setServerTools(tools)
+      }
+    } catch (err) {
+      console.error('Failed to load server tools:', err)
+    }
+  }
+
+  const saveServer = async (serverId: string, config: MCPServerConfigType) => {
+    try {
+      const response = await fetch('/api/settings/mcp-servers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serverId, config })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      await loadServers()
+      await loadServerStatuses()
+      setEditingServer(null)
+      setShowAddServer(false)
+      
+      // Show success message
+      setError(null)
+    } catch (err) {
+      console.error('Failed to save server:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save server')
+    }
+  }
+
+  const deleteServer = async (serverId: string) => {
+    if (!confirm(text.deleteConfirmation.replace('{name}', serverId))) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/settings/mcp-servers/${serverId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      await loadServers()
+      await loadServerStatuses()
+    } catch (err) {
+      console.error('Failed to delete server:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete server')
+    }
+  }
+
+  const testConnection = async (serverId: string) => {
+    try {
+      setTestingConnection(serverId)
+      const response = await fetch(`/api/settings/mcp-servers/${serverId}/test`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      
+      // Refresh statuses after test
+      await loadServerStatuses()
+      await loadServerTools()
+      
+      setError(null)
+    } catch (err) {
+      console.error('Failed to test connection:', err)
+      setError(err instanceof Error ? err.message : 'Connection test failed')
+    } finally {
+      setTestingConnection(null)
+    }
+  }
+
+  const toggleServerEnabled = async (serverId: string, enabled: boolean) => {
+    const server = servers[serverId]
+    if (!server) return
+
+    await saveServer(serverId, { ...server, disabled: !enabled })
+  }
+
+  const startEditingServer = (serverId: string) => {
+    const server = servers[serverId]
+    if (server) {
+      setEditingServer(serverId)
+      setEditingConfig(JSON.stringify({
+        command: server.command,
+        args: server.args || [],
+        env: server.env || {},
+        disabled: server.disabled || false,
+        timeout: server.timeout || 30000,
+        maxConcurrency: server.maxConcurrency || 5
+      }, null, 2))
+    }
+  }
+
+  const saveEditedServer = async () => {
+    if (!editingServer) return
+
+    try {
+      const config = JSON.parse(editingConfig)
+      await saveServer(editingServer, config)
+    } catch (err) {
+      setError(text.invalidJson)
+    }
+  }
+
+  const addNewServer = async () => {
+    if (!newServerConfig.id || !newServerConfig.command) {
+      setError('Server ID and command are required')
+      return
+    }
+
+    await saveServer(newServerConfig.id, {
+      command: newServerConfig.command,
+      args: newServerConfig.args,
+      env: newServerConfig.env,
+      disabled: newServerConfig.disabled,
+      timeout: newServerConfig.timeout,
+      maxConcurrency: newServerConfig.maxConcurrency
+    })
+
+    // Reset form
+    setNewServerConfig({
+      id: '',
+      command: '',
+      args: [],
+      env: {},
+      disabled: false,
+      timeout: 30000,
+      maxConcurrency: 5
+    })
+  }
+
+  const formatUptime = (uptime?: number) => {
+    if (!uptime) return '-'
+    
+    const seconds = Math.floor(uptime / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    if (days > 0) return `${days} ${text.days}`
+    if (hours > 0) return `${hours} ${text.hours}`
+    if (minutes > 0) return `${minutes} ${text.minutes}`
+    return `${seconds} ${text.seconds}`
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'connected':
+      case 'healthy':
+        return 'bg-green-500'
+      case 'error':
+      case 'unhealthy':
+        return 'bg-red-500'
+      case 'connecting':
+      case 'unknown':
+      default:
+        return 'bg-yellow-500'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return text.connected
+      case 'disconnected':
+        return text.disconnected
+      case 'error':
+        return text.error
+      case 'connecting':
+        return text.connecting
+      case 'healthy':
+        return text.healthy
+      case 'unhealthy':
+        return text.unhealthy
+      default:
+        return text.unknown
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="animate-pulse">
+          <div className="h-4 bg-muted rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            <div className="h-16 bg-muted rounded"></div>
+            <div className="h-16 bg-muted rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      <Card variant="outlined">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t('settings.mcpServers')}</CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {t('settings.mcpServersDescription')}
-              </p>
-            </div>
-            <Button
-              onClick={handleAddServer}
-              disabled={isAddingServer || editingServerId !== null}
-            >
-              {t('settings.addServer')}
-            </Button>
-          </div>
-        </CardHeader>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">{text.serverConfiguration}</h3>
+        <div className="flex space-x-2">
+          <button
+            onClick={loadServerStatuses}
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            {text.refresh}
+          </button>
+          <button
+            onClick={() => setShowAddServer(true)}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            {text.addServer}
+          </button>
+        </div>
+      </div>
 
-        <CardContent>
-          {/* Add/Edit Server Form */}
-          {(isAddingServer || editingServerId) && (
-            <Card variant="outlined" className="mb-6 bg-gray-50 dark:bg-gray-900">
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label={t('settings.serverName')}
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="my-mcp-server"
-                      error={formErrors.name}
-                      fullWidth
-                      required
-                    />
+      {/* Error Display */}
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+          <p className="text-sm">{error}</p>
+          <button
+            onClick={() => setError(null)}
+            className="text-xs underline mt-1"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
-                    <Input
-                      label={t('settings.serverCommand')}
-                      value={formData.command}
-                      onChange={(e) => setFormData(prev => ({ ...prev, command: e.target.value }))}
-                      placeholder="uvx"
-                      error={formErrors.command}
-                      fullWidth
-                      required
-                    />
+      {/* Server List */}
+      {Object.keys(servers).length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>{text.noServers}</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(servers).map(([serverId, server]) => {
+            const status = serverStatuses[serverId]
+            const tools = serverTools[serverId] || []
+            const isEditing = editingServer === serverId
+
+            return (
+              <div key={serverId} className="border rounded-lg p-4 space-y-4">
+                {/* Server Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-3 h-3 rounded-full ${getStatusColor(status?.status || 'unknown')}`}></div>
+                    <h4 className="font-medium">{serverId}</h4>
+                    <span className="text-sm text-muted-foreground">
+                      {getStatusText(status?.status || 'unknown')}
+                    </span>
                   </div>
-
-                  <Textarea
-                    label={t('settings.serverArgs')}
-                    value={JSON.stringify(formData.args, null, 2)}
-                    onChange={(e) => {
-                      try {
-                        const args = JSON.parse(e.target.value);
-                        setFormData(prev => ({ ...prev, args: Array.isArray(args) ? args : [] }));
-                      } catch {
-                        // Keep the text as is for user to fix
-                      }
-                    }}
-                    placeholder='["package@latest", "--arg1", "value1"]'
-                    helperText="JSON array of command arguments"
-                    rows={3}
-                    fullWidth
-                  />
-
-                  <Textarea
-                    label={t('settings.environmentVariables')}
-                    value={JSON.stringify(formData.env, null, 2)}
-                    onChange={(e) => {
-                      try {
-                        const env = JSON.parse(e.target.value);
-                        setFormData(prev => ({ ...prev, env: typeof env === 'object' ? env : {} }));
-                      } catch {
-                        // Keep the text as is for user to fix
-                      }
-                    }}
-                    placeholder='{"ENV_VAR": "value", "ANOTHER_VAR": "value2"}'
-                    helperText="JSON object of environment variables"
-                    rows={3}
-                    fullWidth
-                  />
-
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="server-enabled"
-                      checked={formData.enabled}
-                      onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="server-enabled" className="text-sm text-gray-700 dark:text-gray-300">
-                      {t('settings.serverEnabled')}
-                    </label>
-                  </div>
-
-                  <div className="flex justify-end space-x-3">
-                    <Button variant="outline" onClick={handleCancelForm}>
-                      {t('common.cancel')}
-                    </Button>
-                    <Button onClick={handleSaveServer}>
-                      {editingServerId ? t('common.save') : t('settings.addServer')}
-                    </Button>
+                    <button
+                      onClick={() => testConnection(serverId)}
+                      disabled={testingConnection === serverId}
+                      className="text-sm px-3 py-1 border rounded hover:bg-accent transition-colors disabled:opacity-50"
+                    >
+                      {testingConnection === serverId ? '...' : text.test}
+                    </button>
+                    <button
+                      onClick={() => toggleServerEnabled(serverId, !!server.disabled)}
+                      className={`text-sm px-3 py-1 border rounded transition-colors ${
+                        server.disabled 
+                          ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
+                          : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                      }`}
+                    >
+                      {server.disabled ? text.enable : text.disable}
+                    </button>
+                    <button
+                      onClick={() => startEditingServer(serverId)}
+                      className="text-sm px-3 py-1 border rounded hover:bg-accent transition-colors"
+                    >
+                      {text.edit}
+                    </button>
+                    <button
+                      onClick={() => deleteServer(serverId)}
+                      className="text-sm px-3 py-1 border border-red-200 text-red-700 rounded hover:bg-red-50 transition-colors"
+                    >
+                      {text.delete}
+                    </button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* JSON Import Section */}
-          <Card variant="outlined" className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Import MCP Configuration</CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Import servers from MCP JSON configuration
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Textarea
-                  label="MCP Configuration JSON"
-                  value={jsonImportText}
-                  onChange={(e) => setJsonImportText(e.target.value)}
-                  placeholder='{"mcpServers": {"server-name": {"command": "uvx", "args": ["package@latest"]}}}'
-                  rows={6}
-                  fullWidth
-                />
-                {importError && (
-                  <Alert variant="error">
-                    {importError}
-                  </Alert>
-                )}
-                <div className="flex justify-end">
-                  <Button 
-                    onClick={handleJsonImport}
-                    disabled={!jsonImportText.trim()}
-                  >
-                    Import Servers
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Existing Servers List */}
-          <div className="space-y-4">
-            {mcpServers.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>{t('settings.noServersConfigured', 'No MCP servers configured yet.')}</p>
-                <p className="text-sm mt-1">
-                  Add a server to enable MCP tool calling in your chats.
-                </p>
-              </div>
-            ) : (
-              mcpServers.map((server) => (
-                <Card key={server.id} variant="outlined" className="hover:shadow-sm transition-shadow">
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              server.status === 'connected' ? 'bg-green-500' : 
-                              server.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                            }`} />
-                            <h3 className="font-medium text-gray-900 dark:text-white">
-                              {server.name}
-                            </h3>
-                          </div>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            server.enabled 
-                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                          }`}>
-                            {server.enabled ? t('settings.enable') : t('settings.disable')}
-                          </span>
+                {/* Server Details */}
+                {!isEditing ? (
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="font-medium">{text.command}:</span>
+                          <span className="ml-2 font-mono bg-muted px-2 py-1 rounded">{server.command}</span>
                         </div>
-                        
-                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                          <p>Command: {server.command} {server.args.join(' ')}</p>
-                          {Object.keys(server.env || {}).length > 0 && (
-                            <p>Environment: {Object.keys(server.env || {}).length} variables</p>
-                          )}
-                          
-                          {/* Connection Test Result */}
-                          {connectionResults[server.id] && (
-                            <div className={`mt-2 flex items-center space-x-2 text-xs ${
-                              connectionResults[server.id].success 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              {connectionResults[server.id].success ? (
-                                <>
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                  <span>{t('settings.connectionSuccessful')}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                  </svg>
-                                  <span>
-                                    {t('settings.connectionFailed')}
-                                    {connectionResults[server.id].error && (
-                                      <span className="ml-1">: {connectionResults[server.id].error}</span>
-                                    )}
-                                  </span>
-                                </>
-                              )}
-                              <span className="text-gray-400">
-                                ({new Date(connectionResults[server.id].timestamp).toLocaleTimeString()})
-                              </span>
+                        {server.args && server.args.length > 0 && (
+                          <div>
+                            <span className="font-medium">{text.arguments}:</span>
+                            <div className="ml-2 space-y-1">
+                              {server.args.map((arg, index) => (
+                                <div key={index} className="font-mono bg-muted px-2 py-1 rounded text-xs">
+                                  {arg}
+                                </div>
+                              ))}
                             </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleTestConnection(server.id)}
-                          loading={testingConnections.has(server.id)}
-                          disabled={!server.enabled}
-                        >
-                          {t('settings.testConnection')}
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleMCPServer(server.id)}
-                        >
-                          {server.enabled ? t('settings.disable') : t('settings.enable')}
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditServer(server)}
-                          disabled={isAddingServer || editingServerId !== null}
-                        >
-                          {t('common.edit')}
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMCPServer(server.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
-                        >
-                          {t('common.delete')}
-                        </Button>
+                          </div>
+                        )}
+                        {server.env && Object.keys(server.env).length > 0 && (
+                          <div>
+                            <span className="font-medium">{text.environment}:</span>
+                            <div className="ml-2 space-y-1">
+                              {Object.entries(server.env).map(([key, value]) => (
+                                <div key={key} className="font-mono bg-muted px-2 py-1 rounded text-xs">
+                                  {key}={value}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+                    <div>
+                      {status && (
+                        <div className="space-y-2">
+                          <div>
+                            <span className="font-medium">{text.lastCheck}:</span>
+                            <span className="ml-2">{new Date(status.lastCheck).toLocaleString()}</span>
+                          </div>
+                          {status.responseTime && (
+                            <div>
+                              <span className="font-medium">{text.responseTime}:</span>
+                              <span className="ml-2">{status.responseTime}{text.ms}</span>
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-medium">{text.uptime}:</span>
+                            <span className="ml-2">{formatUptime(status.uptime)}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium">{text.toolCount}:</span>
+                            <span className="ml-2">{status.toolCount}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* Configuration Editor */
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">{text.jsonConfiguration}</label>
+                      <textarea
+                        value={editingConfig}
+                        onChange={(e) => setEditingConfig(e.target.value)}
+                        className="w-full h-64 p-3 border rounded-md font-mono text-sm bg-background"
+                        placeholder="Enter JSON configuration..."
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => setEditingServer(null)}
+                        className="px-4 py-2 border rounded-md hover:bg-accent transition-colors"
+                      >
+                        {text.cancel}
+                      </button>
+                      <button
+                        onClick={saveEditedServer}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                      >
+                        {text.save}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-export default MCPServerConfig;
+                {/* Available Tools */}
+                {!isEditing && tools.length > 0 && (
+                  <div>
+                    <h5 className="font-medium mb-2">{text.availableTools}</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {tools.map((tool) => (
+                        <div key={tool.name} className="bg-muted/50 p-2 rounded text-sm">
+                          <div className="font-medium">{tool.name.replace(`${serverId}.`, '')}</div>
+                          {tool.description && (
+                            <div className="text-muted-foreground text-xs mt-1">{tool.description}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Troubleshooting */}
+                {!isEditing && status?.status === 'unhealthy' && (
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                    <h5 className="font-medium text-yellow-800 mb-2">{text.troubleshootingTips}</h5>
+                    <ul className="text-sm text-yellow-700 space-y-1">
+                      <li>• {text.checkCommand}</li>
+                      <li>• {text.checkArgs}</li>
+                      <li>• {text.checkEnv}</li>
+                      <li>• {text.checkPermissions}</li>
+                    </ul>
+                    {status.error && (
+                      <div className="mt-2 p-2 bg-yellow-100 rounded text-xs font-mono">
+                        {status.error}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add Server Modal */}
+      {showAddServer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-medium mb-4">{text.addServer}</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">{text.serverId}</label>
+                <input
+                  type="text"
+                  value={newServerConfig.id}
+                  onChange={(e) => setNewServerConfig(prev => ({ ...prev, id: e.target.value }))}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="e.g., filesystem"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">{text.command}</label>
+                <input
+                  type="text"
+                  value={newServerConfig.command}
+                  onChange={(e) => setNewServerConfig(prev => ({ ...prev, command: e.target.value }))}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="e.g., npx"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">{text.arguments}</label>
+                <textarea
+                  value={newServerConfig.args.join('\n')}
+                  onChange={(e) => setNewServerConfig(prev => ({ 
+                    ...prev, 
+                    args: e.target.value.split('\n').filter(arg => arg.trim()) 
+                  }))}
+                  className="w-full p-2 border rounded-md h-24"
+                  placeholder="One argument per line"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{text.timeout} (ms)</label>
+                  <input
+                    type="number"
+                    value={newServerConfig.timeout}
+                    onChange={(e) => setNewServerConfig(prev => ({ ...prev, timeout: parseInt(e.target.value) || 30000 }))}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{text.maxConcurrency}</label>
+                  <input
+                    type="number"
+                    value={newServerConfig.maxConcurrency}
+                    onChange={(e) => setNewServerConfig(prev => ({ ...prev, maxConcurrency: parseInt(e.target.value) || 5 }))}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <button
+                onClick={() => setShowAddServer(false)}
+                className="px-4 py-2 border rounded-md hover:bg-accent transition-colors"
+              >
+                {text.cancel}
+              </button>
+              <button
+                onClick={addNewServer}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              >
+                {text.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

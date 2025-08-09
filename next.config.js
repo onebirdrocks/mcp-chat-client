@@ -10,6 +10,8 @@ const nextConfig = {
     
     return config;
   },
+  // Note: i18n configuration is not supported in App Router
+  // We handle internationalization client-side with react-i18next
   async headers() {
     return [
       {
@@ -19,7 +21,7 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Origin', value: 'http://localhost:3000' },
           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Credentials', value: 'Content-Type, Authorization, Accept-Language' },
         ],
       },
     ];
