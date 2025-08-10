@@ -19,12 +19,13 @@
           "maxTokens": 4096
         }
       ],
-      "apiKeyHash": ""
+      "apiKeyHash": "",
+      "enabled": true
     },
     {
       "id": "deepseek-1",
       "name": "deepseek",
-      "apiKey": "",
+      "apiKey": "U2FsdGVkX18KHXDpMMSskfj6oancv/otieCnz/DxmHlE0FKXOYjS8Xrtr5MiNU7FPf5TMNBCHtd2K8RMtPFH4A==",
       "baseUrl": "https://api.deepseek.com/v1",
       "models": [
         {
@@ -34,13 +35,14 @@
           "maxTokens": 4096
         }
       ],
-      "apiKeyHash": ""
+      "apiKeyHash": "3ec5ac89245db0b95b53d4ad99bb0eb56133513eb6fb947bc8897864f6efcb4a",
+      "enabled": true
     },
     {
       "id": "openrouter-1",
       "name": "openrouter",
       "apiKey": "",
-      "baseUrl": "https://openrouter.ai/api/v1",
+      "baseUrl": "https://openrouter.ai/apisk-or-v1-e1e8a9b8e542020651e6f39d6eea847479c6e0fe7b657a41a78a32373f153c28v1",
       "models": [
         {
           "id": "openai/gpt-4",
@@ -49,7 +51,8 @@
           "maxTokens": 8192
         }
       ],
-      "apiKeyHash": ""
+      "apiKeyHash": "",
+      "enabled": true
     }
   ],
   "mcpServers": [

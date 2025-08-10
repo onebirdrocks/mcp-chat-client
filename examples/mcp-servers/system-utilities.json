@@ -1,0 +1,174 @@
+{
+  "name": "System and Utilities",
+  "description": "System utilities including shell commands, memory, time, and weather services",
+  "category": "utilities",
+  "servers": {
+    "shell": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-shell"],
+      "env": {
+        "SHELL_ALLOWED_COMMANDS": "ls,cat,grep,find,ps,df,free,uptime",
+        "SHELL_WORKING_DIRECTORY": "/home/user"
+      }
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "time": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-time"]
+    },
+    "weather": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-weather"],
+      "env": {
+        "WEATHER_API_KEY": "your-weather-api-key"
+      }
+    }
+  },
+  "setup": {
+    "dependencies": [
+      "@modelcontextprotocol/server-shell",
+      "@modelcontextprotocol/server-memory",
+      "@modelcontextprotocol/server-time",
+      "@modelcontextprotocol/server-weather"
+    ],
+    "installation": [
+      "npm install -g @modelcontextprotocol/server-shell",
+      "npm install -g @modelcontextprotocol/server-memory",
+      "npm install -g @modelcontextprotocol/server-time",
+      "npm install -g @modelcontextprotocol/server-weather"
+    ],
+    "configuration": [
+      "Shell: Configure allowed commands for security",
+      "Memory: No additional configuration required",
+      "Time: No additional configuration required", 
+      "Weather: Get API key from OpenWeatherMap or similar service"
+    ]
+  },
+  "tools": {
+    "shell": [
+      {
+        "name": "execute_command",
+        "description": "Execute a shell command"
+      },
+      {
+        "name": "list_allowed_commands",
+        "description": "List commands that are allowed to execute"
+      }
+    ],
+    "memory": [
+      {
+        "name": "store_memory",
+        "description": "Store information for later retrieval"
+      },
+      {
+        "name": "retrieve_memory",
+        "description": "Retrieve previously stored information"
+      },
+      {
+        "name": "list_memories",
+        "description": "List all stored memories"
+      },
+      {
+        "name": "delete_memory",
+        "description": "Delete a specific memory"
+      }
+    ],
+    "time": [
+      {
+        "name": "get_current_time",
+        "description": "Get the current date and time"
+      },
+      {
+        "name": "format_time",
+        "description": "Format a timestamp in various formats"
+      },
+      {
+        "name": "calculate_duration",
+        "description": "Calculate duration between two times"
+      },
+      {
+        "name": "get_timezone_info",
+        "description": "Get timezone information"
+      }
+    ],
+    "weather": [
+      {
+        "name": "get_current_weather",
+        "description": "Get current weather for a location"
+      },
+      {
+        "name": "get_weather_forecast",
+        "description": "Get weather forecast for a location"
+      },
+      {
+        "name": "get_weather_history",
+        "description": "Get historical weather data"
+      }
+    ]
+  },
+  "security": {
+    "notes": [
+      "Shell server can execute system commands - restrict allowed commands",
+      "Never allow dangerous commands like rm, sudo, or system modification commands",
+      "Memory server stores data locally - ensure proper file permissions",
+      "Weather API keys should be kept secure",
+      "Consider running shell commands in a sandboxed environment"
+    ]
+  },
+  "examples": {
+    "safe_shell": {
+      "shell-safe": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-shell"],
+        "env": {
+          "SHELL_ALLOWED_COMMANDS": "ls,cat,grep,find,ps,df,free,uptime,whoami,pwd,date",
+          "SHELL_WORKING_DIRECTORY": "/home/user/safe-directory",
+          "SHELL_TIMEOUT": "30"
+        }
+      }
+    },
+    "readonly_system": {
+      "shell-readonly": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-shell"],
+        "env": {
+          "SHELL_ALLOWED_COMMANDS": "ls,cat,grep,find,ps,df,free,uptime,whoami,pwd,date,head,tail",
+          "SHELL_READONLY": "true"
+        }
+      }
+    },
+    "weather_service": {
+      "weather": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-weather"],
+        "env": {
+          "WEATHER_API_KEY": "${OPENWEATHER_API_KEY}",
+          "WEATHER_UNITS": "metric",
+          "WEATHER_LANGUAGE": "en"
+        }
+      }
+    },
+    "persistent_memory": {
+      "memory": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-memory"],
+        "env": {
+          "MEMORY_STORAGE_PATH": "/path/to/memory/storage",
+          "MEMORY_MAX_SIZE": "100MB"
+        }
+      }
+    }
+  },
+  "use_cases": [
+    "System monitoring and diagnostics",
+    "File system operations and analysis",
+    "Persistent conversation memory",
+    "Time and date calculations",
+    "Weather information and forecasts",
+    "Basic system administration tasks",
+    "Log file analysis and monitoring"
+  ]
+}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useLanguage } from '../../src/hooks/useLanguage';
@@ -42,8 +42,8 @@ const PreferencesConfig: React.FC<PreferencesConfigProps> = ({ className = '' })
       // Update preferences
       updatePreferences({ language: newLanguage });
       
-      // Use Next.js router to change locale
-      await router.push(router.asPath, router.asPath, { locale: newLanguage });
+      // For App Router, we don't need to change routes for language
+      // The language change is handled by i18next and stored in localStorage
     } catch (error) {
       console.error('Failed to change language:', error);
     } finally {

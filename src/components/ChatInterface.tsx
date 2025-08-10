@@ -3,12 +3,19 @@ import { useTranslation } from 'react-i18next';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ToolConfirmationDialog from './ToolConfirmationDialog';
-import Alert from './ui/Alert';
+import { 
+  Alert, 
+  LoadingOverlay, 
+  StreamingIndicator, 
+  StatusIndicator,
+  useNotifications 
+} from './ui';
 import { ResponsiveContainer } from './ui/ResponsiveContainer';
 import { useChatStore } from '../store/chatStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useEnhancedAccessibility } from '../hooks/useAccessibility';
 import { useResponsive, useTouchDevice, useOrientation } from '../hooks/useResponsive';
+import { useIntegration } from './IntegrationManager';
 import type { ToolCall } from '../types';
 
 export interface ChatInterfaceProps {
@@ -23,6 +30,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const { screenReaderUtils } = useEnhancedAccessibility();
+  const { handleAsyncOperation, validateSystemState } = useIntegration();
+  const { showError, showSuccess } = useNotifications();
   
   // Responsive hooks
   const { isMobile, isTablet, currentBreakpoint } = useResponsive();
@@ -57,56 +66,57 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
 
   // Enhanced send message with error handling and real-time feedback
   const handleSendMessage = useCallback(async (content: string, useStreaming: boolean = true) => {
-    // Clear local error state
-    setError(null);
-    
+    // Validate system state before sending
+    const systemValidation = validateSystemState();
+    if (!systemValidation.isValid) {
+      showError('System Error', systemValidation.issues.join(', '));
+      return;
+    }
+
     if (!currentSession) {
       const errorMsg = t('errors.noActiveSession', 'No active chat session. Please create a new chat.');
-      setError(errorMsg);
+      showError('No Active Session', errorMsg);
       screenReaderUtils.announceError(errorMsg, 'Chat');
       return;
     }
 
     if (!hasValidProvider) {
       const errorMsg = t('errors.noValidProvider', 'No valid LLM provider configured. Please check your settings.');
-      setError(errorMsg);
+      showError('Configuration Required', errorMsg);
       screenReaderUtils.announceError(errorMsg, 'Chat');
       return;
     }
 
-    try {
-      if (useStreaming) {
-        await sendMessageStream(content);
-      } else {
-        await sendMessage(content, false);
+    await handleAsyncOperation(
+      async () => {
+        if (useStreaming) {
+          await sendMessageStream(content);
+        } else {
+          await sendMessage(content, false);
+        }
+        screenReaderUtils.announceSuccess('Message sent', 'Chat');
+      },
+      {
+        errorMessage: 'Failed to send message',
+        showNotifications: false // We handle notifications manually for better UX
       }
-      // Clear local error on successful send
-      setError(null);
-      // Announce message sent to screen readers
-      screenReaderUtils.announceSuccess('Message sent', 'Chat');
-    } catch (error) {
-      // Error is already handled in the store, but we can add local handling if needed
-      console.error('Chat interface: Message send failed:', error);
-      screenReaderUtils.announceError('Failed to send message', 'Chat');
-    }
-  }, [currentSession, hasValidProvider, sendMessage, sendMessageStream, setError, screenReaderUtils, t]);
+    );
+  }, [currentSession, hasValidProvider, sendMessage, sendMessageStream, screenReaderUtils, t, handleAsyncOperation, validateSystemState, showError]);
 
   // Enhanced tool confirmation with error handling and accessibility
   const handleConfirmToolCall = useCallback(async (toolCall: ToolCall) => {
-    // Clear local error state
-    setError(null);
-    
-    try {
-      await confirmToolCall(toolCall);
-      // Clear local error on successful execution
-      setError(null);
-      screenReaderUtils.announceSuccess('Tool executed successfully', 'Tool execution');
-    } catch (error) {
-      // Error is already handled in the store, but we can add local handling if needed
-      console.error('Chat interface: Tool execution failed:', error);
-      screenReaderUtils.announceError('Tool execution failed', 'Tool execution');
-    }
-  }, [confirmToolCall, setError, screenReaderUtils]);
+    await handleAsyncOperation(
+      async () => {
+        await confirmToolCall(toolCall);
+        screenReaderUtils.announceSuccess('Tool executed successfully', 'Tool execution');
+      },
+      {
+        loadingMessage: `Executing ${toolCall.function.name}...`,
+        successMessage: 'Tool executed successfully',
+        errorMessage: 'Tool execution failed'
+      }
+    );
+  }, [confirmToolCall, screenReaderUtils, handleAsyncOperation]);
 
   // Handle tool cancellation with accessibility feedback
   const handleCancelToolCall = useCallback(() => {
@@ -183,6 +193,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
         {t('accessibility.skipToMessageInput', 'Skip to message input')}
       </a>
 
+      {/* System Status Bar */}
+      <div className={`flex-shrink-0 border-b border-gray-200 dark:border-gray-700 ${isMobile ? 'px-3 py-2' : 'px-4 py-3'}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            {/* Provider Status */}
+            {currentSession && (
+              <StatusIndicator
+                status={hasValidProvider ? 'online' : 'error'}
+                label={`${currentSession.provider} ${currentSession.model}`}
+                className="text-xs"
+              />
+            )}
+            
+            {/* MCP Status */}
+            <StatusIndicator
+              status={llmProviders.some(p => p.enabled) ? 'online' : 'offline'}
+              label="MCP Servers"
+              className="text-xs"
+            />
+          </div>
+          
+          {/* Streaming Indicator */}
+          {isStreaming && (
+            <StreamingIndicator isStreaming={true} className="text-xs" />
+          )}
+        </div>
+      </div>
+
       {/* Error Alert */}
       {(error || storeError) && (
         <div className={`flex-shrink-0 ${isMobile ? 'p-3' : 'p-4'}`} role="alert" aria-live="assertive">
@@ -253,16 +291,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
         aria-live="polite"
         aria-atomic="false"
       >
-        <MessageList
-          messages={messages}
+        <LoadingOverlay
           isLoading={isLoading && !isStreaming}
-          streamingMessage={isStreaming ? streamingContent : undefined}
-          autoScroll={true}
-          onDeleteMessage={handleDeleteMessage}
-          className={`h-full ${isMobile ? 'p-2' : isTablet ? 'p-4' : 'p-6'}`}
-          isMobile={isMobile}
-          isTouch={isTouch}
-        />
+          text={t('chat.processing', 'Processing your message...')}
+          className="h-full"
+        >
+          <MessageList
+            messages={messages}
+            isLoading={isLoading && !isStreaming}
+            streamingMessage={isStreaming ? streamingContent : undefined}
+            autoScroll={true}
+            onDeleteMessage={handleDeleteMessage}
+            className={`h-full ${isMobile ? 'p-2' : isTablet ? 'p-4' : 'p-6'}`}
+            isMobile={isMobile}
+            isTouch={isTouch}
+          />
+        </LoadingOverlay>
 
         {/* Cancel streaming button */}
         {isStreaming && (

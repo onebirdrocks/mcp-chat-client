@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../src/i18n';
 import { initializeSettings } from '../../src/store/settingsStore';
@@ -26,10 +26,9 @@ const ClientProviders: React.FC<ClientProvidersProps> = ({
         // Initialize theme first to prevent flash
         initializeTheme();
         
-        // Initialize i18n with the current locale from Next.js router
-        const currentLocale = router.locale || initialLanguage;
-        if (i18n.language !== currentLocale) {
-          await i18n.changeLanguage(currentLocale);
+        // Initialize i18n with the initial language
+        if (i18n.language !== initialLanguage) {
+          await i18n.changeLanguage(initialLanguage);
         }
         
         // Initialize settings store
@@ -44,7 +43,7 @@ const ClientProviders: React.FC<ClientProvidersProps> = ({
     };
 
     initializeApp();
-  }, [router.locale, initialLanguage]);
+  }, [initialLanguage]);
 
   // Show loading state while initializing
   if (!isInitialized) {

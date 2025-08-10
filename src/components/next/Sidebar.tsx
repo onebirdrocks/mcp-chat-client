@@ -142,9 +142,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile/Tablet overlay */}
       {isOpen && (isMobile || isTablet) && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
         />
       )}
       
@@ -153,10 +154,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ref={sidebarRef}
         className={`
           ${isMobile || isTablet ? 'fixed' : 'static'} inset-y-0 left-0 z-50 lg:z-auto
-          ${getSidebarWidth()} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
+          ${getSidebarWidth()} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
           transform transition-transform duration-300 ease-in-out lg:transform-none
           ${isOpen ? 'translate-x-0' : isMobile || isTablet ? '-translate-x-full' : 'translate-x-0'}
-          flex flex-col h-full
+          flex flex-col h-full shadow-lg lg:shadow-none
           ${isTouch ? 'touch-manipulation' : ''}
           ${className}
         `}
@@ -169,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         id="navigation"
       >
         {/* Header */}
-        <header className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <header className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
           <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
             MCP Chat UI
           </h1>
@@ -269,7 +270,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </section>
         
         {/* Footer */}
-        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
           <div className="space-y-2">
             <Button
               variant="ghost"

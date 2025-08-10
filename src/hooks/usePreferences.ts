@@ -1,21 +1,18 @@
 import { useCallback } from 'react';
-import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from './useTheme';
 import { useLanguage } from './useLanguage';
 import { useAccessibility } from './useAccessibility';
 import { useSettingsStore } from '../store/settingsStore';
-import type { Theme, Language, UserPreferences, AccessibilityPreferences } from '../types';
+import type { Theme, Language, UserPreferences } from '../types';
 
 /**
- * Comprehensive preferences management hook that integrates with Next.js i18n
+ * Comprehensive preferences management hook
  */
 export const usePreferences = () => {
-  const router = useRouter();
-  const { i18n } = useTranslation();
   const { theme, changeTheme } = useTheme();
   const { currentLanguage, changeLanguage } = useLanguage();
-  const { userPreferences: accessibilityPrefs, updatePreferences: updateAccessibilityPrefs } = useAccessibility();
+  const { preferences: accessibilityPrefs, updatePreferences: updateAccessibilityPrefs } = useAccessibility();
   const { preferences, updatePreferences, isSaving } = useSettingsStore();
 
   // Handle theme changes with immediate UI updates
@@ -24,7 +21,7 @@ export const usePreferences = () => {
     updatePreferences({ theme: newTheme });
   }, [changeTheme, updatePreferences]);
 
-  // Handle language changes with Next.js router integration
+  // Handle language changes
   const handleLanguageChange = useCallback(async (newLanguage: Language) => {
     if (newLanguage === currentLanguage) return;
     
@@ -34,14 +31,11 @@ export const usePreferences = () => {
       
       // Update preferences
       updatePreferences({ language: newLanguage });
-      
-      // Use Next.js router to change locale
-      await router.push(router.asPath, router.asPath, { locale: newLanguage });
     } catch (error) {
       console.error('Failed to change language:', error);
       throw error;
     }
-  }, [currentLanguage, changeLanguage, updatePreferences, router]);
+  }, [currentLanguage, changeLanguage, updatePreferences]);
 
   // Handle general preference changes
   const handlePreferenceChange = useCallback(<K extends keyof UserPreferences>(
@@ -52,10 +46,7 @@ export const usePreferences = () => {
   }, [updatePreferences]);
 
   // Handle accessibility preference changes
-  const handleAccessibilityChange = useCallback(<K extends keyof AccessibilityPreferences>(
-    key: K, 
-    value: AccessibilityPreferences[K]
-  ) => {
+  const handleAccessibilityChange = useCallback((key: string, value: boolean) => {
     updateAccessibilityPrefs({ [key]: value });
   }, [updateAccessibilityPrefs]);
 
@@ -80,32 +71,23 @@ export const usePreferences = () => {
   }, [theme, currentLanguage, handleThemeChange, handleLanguageChange, updatePreferences]);
 
   // Reset preferences to defaults
-  const resetPreferences = useCallback(async () => {
-    const defaultPrefs: UserPreferences = {
+  const resetPreferences = useCallback(() => {
+    const defaultPrefs: Partial<UserPreferences> = {
       theme: 'system',
       language: 'en',
       autoScroll: true,
       soundEnabled: false,
-      accessibility: {
-        highContrast: false,
-        reducedMotion: false,
-        screenReaderAnnouncements: true,
-        keyboardNavigation: true,
-        focusVisible: true,
-        largeText: false,
-      },
     };
     
-    await updateAllPreferences(defaultPrefs);
+    updateAllPreferences(defaultPrefs);
   }, [updateAllPreferences]);
 
   // Get current effective preferences (combining all sources)
   const effectivePreferences: UserPreferences = {
     theme,
     language: currentLanguage,
-    autoScroll: preferences.autoScroll,
-    soundEnabled: preferences.soundEnabled,
-    accessibility: accessibilityPrefs,
+    autoScroll: preferences.autoScroll ?? true,
+    soundEnabled: preferences.soundEnabled ?? false,
   };
 
   // Check if preferences have been modified from defaults
@@ -115,14 +97,6 @@ export const usePreferences = () => {
       language: 'en',
       autoScroll: true,
       soundEnabled: false,
-      accessibility: {
-        highContrast: false,
-        reducedMotion: false,
-        screenReaderAnnouncements: true,
-        keyboardNavigation: true,
-        focusVisible: true,
-        largeText: false,
-      },
     };
     
     return JSON.stringify(effectivePreferences) !== JSON.stringify(defaults);
@@ -132,19 +106,20 @@ export const usePreferences = () => {
   const exportPreferences = useCallback(() => {
     return {
       preferences: effectivePreferences,
+      accessibility: accessibilityPrefs,
       exportedAt: new Date().toISOString(),
       version: '1.0',
     };
-  }, [effectivePreferences]);
+  }, [effectivePreferences, accessibilityPrefs]);
 
   // Import preferences from backup
-  const importPreferences = useCallback(async (importData: any) => {
+  const importPreferences = useCallback((importData: any) => {
     try {
       if (!importData || !importData.preferences) {
         throw new Error('Invalid import data format');
       }
       
-      const { preferences: importedPrefs } = importData;
+      const { preferences: importedPrefs, accessibility: importedA11y } = importData;
       
       // Validate imported preferences
       if (typeof importedPrefs !== 'object') {
@@ -152,14 +127,23 @@ export const usePreferences = () => {
       }
       
       // Apply imported preferences
-      await updateAllPreferences(importedPrefs);
+      updateAllPreferences(importedPrefs);
+      
+      // Apply accessibility preferences if available
+      if (importedA11y && typeof importedA11y === 'object') {
+        Object.entries(importedA11y).forEach(([key, value]) => {
+          if (typeof value === 'boolean') {
+            handleAccessibilityChange(key, value);
+          }
+        });
+      }
       
       return true;
     } catch (error) {
       console.error('Failed to import preferences:', error);
       return false;
     }
-  }, [updateAllPreferences]);
+  }, [updateAllPreferences, handleAccessibilityChange]);
 
   return {
     // Current preferences

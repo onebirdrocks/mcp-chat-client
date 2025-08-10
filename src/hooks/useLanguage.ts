@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useCallback } from 'react';
-import { useSettingsStore } from '../store';
+import { useSettingsStore } from '../store/settingsStore';
 import type { Language } from '../types';
 
 export type SupportedLanguage = Language;

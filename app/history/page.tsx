@@ -63,12 +63,13 @@ export default async function HistoryPage() {
   return (
     <NavigationLayout>
       {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+      <main className="flex-1 overflow-auto history-layout-fix no-horizontal-scroll">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+          <div className="max-w-6xl mx-auto">
           {/* Search and Filter Bar */}
           <div className="mb-8">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="flex-1 max-w-md">
+            <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+              <div className="flex-1 lg:max-w-md">
                 <div className="relative">
                   <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -76,17 +77,17 @@ export default async function HistoryPage() {
                   <input
                     type="text"
                     placeholder={text.searchConversations}
-                    className="w-full pl-10 pr-4 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent touch-manipulation"
                   />
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <select className="px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-2">
+                <select className="px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring touch-manipulation">
                   <option>{text.allSessions}</option>
                   <option>{text.recent}</option>
                   <option>{text.archived}</option>
                 </select>
-                <button className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                <button className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors touch-manipulation whitespace-nowrap">
                   {text.exportAll}
                 </button>
               </div>
@@ -94,29 +95,29 @@ export default async function HistoryPage() {
           </div>
 
           {/* Session Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-card border rounded-lg p-4">
-              <div className="text-2xl font-bold text-foreground">{stats.totalSessions}</div>
-              <div className="text-sm text-muted-foreground">{text.totalSessions}</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+            <div className="bg-card border rounded-lg p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{stats.totalSessions}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground break-words">{text.totalSessions}</div>
             </div>
-            <div className="bg-card border rounded-lg p-4">
-              <div className="text-2xl font-bold text-foreground">{stats.totalMessages}</div>
-              <div className="text-sm text-muted-foreground">{text.totalMessages}</div>
+            <div className="bg-card border rounded-lg p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{stats.totalMessages}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground break-words">{text.totalMessages}</div>
             </div>
-            <div className="bg-card border rounded-lg p-4">
-              <div className="text-2xl font-bold text-foreground">
+            <div className="bg-card border rounded-lg p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats.totalTokensUsed > 1000 
                   ? `${(stats.totalTokensUsed / 1000).toFixed(1)}K` 
                   : stats.totalTokensUsed
                 }
               </div>
-              <div className="text-sm text-muted-foreground">{text.tokensUsed}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground break-words">{text.tokensUsed}</div>
             </div>
-            <div className="bg-card border rounded-lg p-4">
-              <div className="text-2xl font-bold text-foreground">
+            <div className="bg-card border rounded-lg p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {sessions.reduce((acc, session) => acc + (session.tags.includes('tools-used') ? 1 : 0), 0)}
               </div>
-              <div className="text-sm text-muted-foreground">{text.toolsExecuted}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground break-words">{text.toolsExecuted}</div>
             </div>
           </div>
 
@@ -134,35 +135,35 @@ export default async function HistoryPage() {
                 const hasTools = session.tags.includes('tools-used')
                 
                 return (
-                  <div key={session.id} className="bg-card border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-foreground mb-1">
+                  <div key={session.id} className="session-card bg-card border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex-1 flex-fix">
+                        <h3 className="session-title font-medium text-foreground mb-2">
                           {session.title}
                         </h3>
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-2">
-                          <span>{session.provider} {session.model}</span>
-                          <span>•</span>
-                          <span>{session.messageCount} {text.messages}</span>
-                          <span>•</span>
-                          <span>{timeText}</span>
+                        <div className="session-meta flex flex-wrap items-center text-sm text-muted-foreground mb-2">
+                          <span className="whitespace-nowrap">{session.provider} {session.model}</span>
+                          <span className="hidden sm:inline mx-2">•</span>
+                          <span className="whitespace-nowrap">{session.messageCount} {text.messages}</span>
+                          <span className="hidden sm:inline mx-2">•</span>
+                          <span className="whitespace-nowrap">{timeText}</span>
                           {hasTools && (
                             <>
-                              <span>•</span>
-                              <span className="text-primary">{text.toolsUsed}</span>
+                              <span className="hidden sm:inline mx-2">•</span>
+                              <span className="text-primary whitespace-nowrap">{text.toolsUsed}</span>
                             </>
                           )}
                         </div>
                         {session.totalTokens > 0 && (
-                          <div className="text-xs text-muted-foreground mb-2">
+                          <div className="text-xs text-muted-foreground">
                             {session.totalTokens} tokens • ${session.estimatedCost.toFixed(4)}
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-2 ml-4">
+                      <div className="session-actions flex items-center justify-end space-x-1 sm:space-x-2 flex-shrink-0">
                         <Link
                           href={`/chat/${session.id}`}
-                          className="p-2 hover:bg-muted rounded-md transition-colors"
+                          className="p-2 hover:bg-muted rounded-md transition-colors touch-manipulation"
                           title={language === 'zh' ? '继续对话' : 'Continue conversation'}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,7 +171,7 @@ export default async function HistoryPage() {
                           </svg>
                         </Link>
                         <button 
-                          className="p-2 hover:bg-muted rounded-md transition-colors"
+                          className="p-2 hover:bg-muted rounded-md transition-colors touch-manipulation"
                           title={language === 'zh' ? '编辑标题' : 'Edit title'}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +179,7 @@ export default async function HistoryPage() {
                           </svg>
                         </button>
                         <button 
-                          className="p-2 hover:bg-muted rounded-md transition-colors"
+                          className="p-2 hover:bg-muted rounded-md transition-colors touch-manipulation"
                           title={language === 'zh' ? '删除会话' : 'Delete session'}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,6 +207,7 @@ export default async function HistoryPage() {
                 </Link>
               </div>
             )}
+          </div>
           </div>
         </div>
       </main>

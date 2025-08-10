@@ -1,5 +1,8 @@
 import type { TFunction } from 'i18next';
 
+// Re-export the i18n instance as default
+export { default } from '../i18n/index';
+
 // Specific translation key types for better type safety
 export type CommonKeys = 
   | 'save' | 'cancel' | 'delete' | 'edit' | 'loading' | 'error' | 'success' 

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Button } from '../ui';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import type { ChatSession } from '../../../lib/types';
 
@@ -79,7 +78,7 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
   };
   
   return (
-    <div className="relative">
+    <div className="relative group">
       <button
         onClick={onClick}
         className={`
@@ -123,19 +122,26 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
           </div>
           
           <div className="ml-2 flex-shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
+            <div
               onClick={handleMenuToggle}
               className={`
+                inline-flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors
                 ${isTouch ? 'opacity-100 p-2 touch-manipulation' : 'opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 p-1'}
               `}
+              role="button"
+              tabIndex={0}
               aria-label="Session options"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleMenuToggle(e as any);
+                }
+              }}
             >
               <svg className={`${isTouch ? 'w-5 h-5' : 'w-4 h-4'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
               </svg>
-            </Button>
+            </div>
           </div>
         </div>
       </button>

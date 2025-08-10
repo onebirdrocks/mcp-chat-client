@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAccessibilityContext } from './AccessibilityProvider';
-import { Button } from './Button';
+import Button from './Button';
 import { Switch } from './Switch';
 import { Select } from './Select';
 

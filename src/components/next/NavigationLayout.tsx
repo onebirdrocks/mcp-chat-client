@@ -129,7 +129,7 @@ export const NavigationLayout: React.FC<NavigationLayoutProps> = ({
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile/Tablet header with menu button */}
         {(isMobile || isTablet) && (
-          <header className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 sticky top-0 z-30">
+          <header className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 sticky top-0 z-30">
             <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
@@ -173,9 +173,7 @@ export const NavigationLayout: React.FC<NavigationLayoutProps> = ({
         )}
         
         {/* Main content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {children}
-        </main>
+        {children}
       </div>
     </div>
   );

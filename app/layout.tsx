@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { detectTheme, detectLanguage, detectUserAgent } from '../lib/server-utils'
 import { AccessibilityProvider } from '../src/components/ui/AccessibilityProvider'
+import { IntegrationManager } from '../src/components/IntegrationManager'
+import { ErrorBoundary } from '../src/components/ui/ErrorBoundary'
+import { I18nProvider } from './components/I18nProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -94,7 +97,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="min-h-screen bg-background font-sans antialiased" suppressHydrationWarning>
         {/* Skip Links */}
         <div className="skip-links">
           <a href="#main-content" className="skip-link">
@@ -108,15 +111,20 @@ export default async function RootLayout({
           </a>
         </div>
 
-        <AccessibilityProvider>
-          <div id="root" className="relative flex min-h-screen flex-col">
-            {/* Main Application */}
-            <main id="main-content" role="main" className="flex-1">
-              {children}
-            </main>
-          </div>
-        </AccessibilityProvider>
-
+        <ErrorBoundary>
+          <I18nProvider initialLanguage={language}>
+            <AccessibilityProvider>
+              <IntegrationManager>
+                <div id="root" className="relative flex min-h-screen flex-col">
+                  {/* Main Application */}
+                  <main id="main-content" role="main" className="flex-1">
+                    {children}
+                  </main>
+                </div>
+              </IntegrationManager>
+            </AccessibilityProvider>
+          </I18nProvider>
+        </ErrorBoundary>
         {/* Live regions for screen reader announcements */}
         <div id="a11y-live-polite" aria-live="polite" aria-atomic="true" className="sr-only"></div>
         <div id="a11y-live-assertive" aria-live="assertive" aria-atomic="true" className="sr-only"></div>

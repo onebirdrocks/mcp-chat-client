@@ -64,24 +64,24 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
           <div className="space-y-6">
             {/* Provider Status Overview */}
             <div>
-              <h3 className="text-lg font-medium mb-4">{text.providerStatus}</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">{text.providerStatus}</h3>
               <div className="space-y-3">
                 {serverSettings.llmProviders.map((provider: any) => {
                   const statusColor = provider.status === 'connected' ? 'bg-green-500' : 
                                      provider.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
                   const statusText = provider.status === 'connected' ? text.connected :
                                     provider.status === 'error' ? text.error : text.pending
-                  const statusTextColor = provider.status === 'connected' ? 'text-green-600' :
-                                         provider.status === 'error' ? 'text-red-600' : 'text-yellow-600'
+                  const statusTextColor = provider.status === 'connected' ? 'text-green-600 dark:text-green-400' :
+                                         provider.status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'
                   
                   return (
-                    <div key={provider.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div key={provider.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className={`w-3 h-3 rounded-full ${statusColor}`}></div>
-                        <span className="font-medium">{provider.displayName}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {provider.models.length > 0 
-                            ? provider.models.map((m: any) => m.displayName).join(', ')
+                        <span className="font-medium text-gray-900 dark:text-white">{provider.displayName}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {provider.models && provider.models.length > 0 
+                            ? provider.models.map((m: any) => m.displayName || m.name).join(', ')
                             : (language === 'zh' ? '未配置' : 'Not configured')
                           }
                         </span>
@@ -96,15 +96,15 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
             {/* Configuration Actions */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">{text.providerManagement}</h3>
-                <button className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">{text.providerManagement}</h3>
+                <button className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
                   {text.addProvider}
                 </button>
               </div>
               
-              <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
                 <p className="mb-2">
-                  <strong>{text.note}:</strong> {text.singleUserNote}
+                  <strong className="text-gray-900 dark:text-white">{text.note}:</strong> {text.singleUserNote}
                 </p>
                 <p>
                   {text.sessionNote}
@@ -121,24 +121,24 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
         return (
           <div className="space-y-6">
             {/* MCP Servers Status */}
-            {serverSettings.mcpServers.length > 0 && (
+            {serverSettings.mcpServers && serverSettings.mcpServers.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium mb-4">{text.mcpServers}</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">{text.mcpServers}</h3>
                 <div className="space-y-3">
                   {serverSettings.mcpServers.map((server: any) => {
                     const statusColor = server.status === 'connected' ? 'bg-green-500' : 
                                        server.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
                     const statusText = server.status === 'connected' ? text.connected :
                                       server.status === 'error' ? text.error : text.pending
-                    const statusTextColor = server.status === 'connected' ? 'text-green-600' :
-                                           server.status === 'error' ? 'text-red-600' : 'text-yellow-600'
+                    const statusTextColor = server.status === 'connected' ? 'text-green-600 dark:text-green-400' :
+                                           server.status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'
                     
                     return (
-                      <div key={server.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div key={server.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex items-center space-x-3">
                           <div className={`w-3 h-3 rounded-full ${statusColor}`}></div>
-                          <span className="font-medium">{server.displayName}</span>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="font-medium text-gray-900 dark:text-white">{server.displayName || server.name}</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
                             {server.toolCount > 0 
                               ? `${server.toolCount} ${language === 'zh' ? '个工具' : 'tools'}`
                               : (language === 'zh' ? '无工具' : 'No tools')
@@ -161,7 +161,7 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
       case 'preferences':
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium">{text.preferences}</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{text.preferences}</h3>
             <PreferencesConfig />
           </div>
         )
@@ -176,16 +176,20 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
       case 'security':
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium">{text.security}</h3>
-            <p className="text-muted-foreground">Security settings coming soon...</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{text.security}</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              {language === 'zh' ? '安全设置即将推出...' : 'Security settings coming soon...'}
+            </p>
           </div>
         )
       
       case 'export':
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium">{text.dataExport}</h3>
-            <p className="text-muted-foreground">Data export options coming soon...</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{text.dataExport}</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              {language === 'zh' ? '数据导出选项即将推出...' : 'Data export options coming soon...'}
+            </p>
           </div>
         )
       
@@ -195,78 +199,93 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Settings Navigation */}
-      <div className="grid md:grid-cols-4 gap-8">
+    <div className="max-w-6xl mx-auto">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          {text.settings}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          {language === 'zh' 
+            ? '配置您的LLM提供商、MCP服务器和应用程序偏好设置。'
+            : 'Configure your LLM providers, MCP servers, and application preferences.'
+          }
+        </p>
+      </div>
+
+      {/* Settings Layout */}
+      <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Navigation */}
-        <div className="md:col-span-1">
-          <nav className="space-y-2">
-            <button
-              onClick={() => setActiveTab('llm')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'llm'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {text.llmProviders}
-            </button>
-            <button
-              onClick={() => setActiveTab('mcp')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'mcp'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {text.mcpServers}
-            </button>
-            <button
-              onClick={() => setActiveTab('preferences')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'preferences'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {text.preferences}
-            </button>
-            <button
-              onClick={() => setActiveTab('accessibility')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'accessibility'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {text.accessibility}
-            </button>
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'security'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {text.security}
-            </button>
-            <button
-              onClick={() => setActiveTab('export')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'export'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
-              {text.dataExport}
-            </button>
-          </nav>
+        <div className="lg:w-64 flex-shrink-0">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <nav className="space-y-1">
+              <button
+                onClick={() => setActiveTab('llm')}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'llm'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {text.llmProviders}
+              </button>
+              <button
+                onClick={() => setActiveTab('mcp')}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'mcp'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {text.mcpServers}
+              </button>
+              <button
+                onClick={() => setActiveTab('preferences')}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'preferences'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {text.preferences}
+              </button>
+              <button
+                onClick={() => setActiveTab('accessibility')}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'accessibility'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {text.accessibility}
+              </button>
+              <button
+                onClick={() => setActiveTab('security')}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'security'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {text.security}
+              </button>
+              <button
+                onClick={() => setActiveTab('export')}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'export'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {text.dataExport}
+              </button>
+            </nav>
+          </div>
         </div>
 
         {/* Settings Content */}
-        <div className="md:col-span-3">
-          <div className="bg-card border rounded-lg p-6">
+        <div className="flex-1 min-w-0">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             {renderTabContent()}
           </div>
         </div>

@@ -1,0 +1,22 @@
+{
+  "sessions": {
+    "session_1754791161495_31cvas53o": {
+      "id": "session_1754791161495_31cvas53o",
+      "title": "New Chat",
+      "messages": [],
+      "createdAt": "2025-08-10T01:59:21.495Z",
+      "updatedAt": "2025-08-10T01:59:21.495Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-10T01:59:21.494Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

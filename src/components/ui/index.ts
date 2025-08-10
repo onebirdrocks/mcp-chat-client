@@ -44,3 +44,26 @@ export { default as AccessibilityProvider } from './AccessibilityProvider';
 export { useAccessibilityContext } from './AccessibilityProvider';
 
 export { default as AccessibilitySettings } from './AccessibilitySettings';
+
+// Enhanced error handling and loading states
+export { ErrorBoundary, useErrorBoundary } from './ErrorBoundary';
+export { 
+  LoadingOverlay, 
+  Skeleton, 
+  MessageSkeleton, 
+  SessionSkeleton, 
+  ProgressBar, 
+  PulsingDot, 
+  StreamingIndicator, 
+  LoadingButton, 
+  FadeTransition, 
+  SlideTransition 
+} from './LoadingStates';
+
+// User feedback and notifications
+export { 
+  NotificationProvider, 
+  useNotifications, 
+  ConfirmDialog, 
+  StatusIndicator 
+} from './UserFeedback';

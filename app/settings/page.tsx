@@ -18,10 +18,11 @@ export default async function Settings() {
   
   return (
     <NavigationLayout>
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <SettingsPage language={language} serverSettings={serverSettings} />
-      </main>
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <SettingsPage language={language} serverSettings={serverSettings} />
+        </div>
+      </div>
     </NavigationLayout>
   )
 }

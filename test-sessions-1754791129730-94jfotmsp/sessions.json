@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754791129730_z6a3rg2zn": {
+      "id": "session_1754791129730_z6a3rg2zn",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "My API key is [REDACTED] and my token is [REDACTED]",
+          "timestamp": "2025-08-10T01:58:49.730Z"
+        }
+      ],
+      "createdAt": "2025-08-10T01:58:49.730Z",
+      "updatedAt": "2025-08-10T01:58:49.730Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-10T01:58:49.730Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "sessions": {
+    "session_1754791161530_kd2ai8mgq": {
+      "id": "session_1754791161530_kd2ai8mgq",
+      "title": "This is a very long message that exceeds...",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "This is a very long message that exceeds the 40 character limit for title generation",
+          "timestamp": "2025-08-10T01:59:21.530Z"
+        }
+      ],
+      "createdAt": "2025-08-10T01:59:21.530Z",
+      "updatedAt": "2025-08-10T01:59:21.530Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 0,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-10T01:59:21.530Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}

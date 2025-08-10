@@ -1,11 +1,11 @@
 {
   "sessions": {
-    "session_1754790539307_fr504gaao": {
-      "id": "session_1754790539307_fr504gaao",
+    "session_1754791632783_jbm0x5rge": {
+      "id": "session_1754791632783_jbm0x5rge",
       "title": "Test Chat Session",
       "messages": [],
-      "createdAt": "2025-08-10T01:48:59.307Z",
-      "updatedAt": "2025-08-10T01:48:59.308Z",
+      "createdAt": "2025-08-10T02:07:12.783Z",
+      "updatedAt": "2025-08-10T02:07:12.783Z",
       "provider": "openai",
       "model": "gpt-4",
       "mcpServers": [
@@ -14,7 +14,7 @@
     }
   },
   "metadata": {
-    "lastCleanup": "2025-08-10T01:48:59.950Z",
+    "lastCleanup": "2025-08-10T02:07:12.793Z",
     "totalSessions": 1,
     "version": "1.0.0",
     "encrypted": false
