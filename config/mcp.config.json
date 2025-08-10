@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "ebook-mcp": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/ebook-mcp/src/ebook_mcp/", "run", "main.py"],
+      "env": {
+        "PYTHONPATH": "/path/to/ebook-mcp/src"
+      }
+    },
+    "weather": {
+      "command": "uvx",
+      "args": ["--directory", "/path/to/weather", "run", "weather.py"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    }
+  }
+}

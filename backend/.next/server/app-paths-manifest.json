@@ -1,4 +1,0 @@
-{
-  "/api/settings/route": "app/api/settings/route.js",
-  "/api/chat-history/route": "app/api/chat-history/route.js"
-}

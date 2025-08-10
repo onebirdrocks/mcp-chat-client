@@ -1,0 +1,212 @@
+{
+  "name": "Productivity Tools",
+  "description": "Integration with productivity services like Google Drive, Gmail, Slack, and Notion",
+  "category": "productivity",
+  "servers": {
+    "google-drive": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-google-drive"],
+      "env": {
+        "GOOGLE_DRIVE_CREDENTIALS": "/path/to/credentials.json",
+        "GOOGLE_DRIVE_TOKEN": "/path/to/token.json"
+      }
+    },
+    "gmail": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gmail"],
+      "env": {
+        "GMAIL_CREDENTIALS": "/path/to/gmail-credentials.json",
+        "GMAIL_TOKEN": "/path/to/gmail-token.json"
+      }
+    },
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "xoxb-your-slack-bot-token",
+        "SLACK_APP_TOKEN": "xapp-your-slack-app-token"
+      }
+    },
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-notion"],
+      "env": {
+        "NOTION_API_KEY": "your-notion-integration-token"
+      }
+    }
+  },
+  "setup": {
+    "dependencies": [
+      "@modelcontextprotocol/server-google-drive",
+      "@modelcontextprotocol/server-gmail",
+      "@modelcontextprotocol/server-slack",
+      "@modelcontextprotocol/server-notion"
+    ],
+    "installation": [
+      "npm install -g @modelcontextprotocol/server-google-drive",
+      "npm install -g @modelcontextprotocol/server-gmail",
+      "npm install -g @modelcontextprotocol/server-slack",
+      "npm install -g @modelcontextprotocol/server-notion"
+    ],
+    "configuration": {
+      "google-drive": [
+        "Create a Google Cloud project and enable the Drive API",
+        "Create service account credentials",
+        "Download credentials.json file",
+        "Run OAuth flow to generate token.json"
+      ],
+      "gmail": [
+        "Enable Gmail API in Google Cloud Console",
+        "Create OAuth 2.0 credentials",
+        "Download credentials file",
+        "Complete OAuth authorization flow"
+      ],
+      "slack": [
+        "Create a Slack app at https://api.slack.com/apps",
+        "Add bot token scopes (chat:write, files:read, etc.)",
+        "Install app to workspace",
+        "Copy bot and app tokens"
+      ],
+      "notion": [
+        "Create a Notion integration at https://www.notion.so/my-integrations",
+        "Copy the integration token",
+        "Share relevant pages/databases with the integration"
+      ]
+    }
+  },
+  "tools": {
+    "google-drive": [
+      {
+        "name": "list_files",
+        "description": "List files in Google Drive"
+      },
+      {
+        "name": "download_file",
+        "description": "Download a file from Google Drive"
+      },
+      {
+        "name": "upload_file",
+        "description": "Upload a file to Google Drive"
+      },
+      {
+        "name": "create_folder",
+        "description": "Create a new folder"
+      },
+      {
+        "name": "share_file",
+        "description": "Share a file with others"
+      }
+    ],
+    "gmail": [
+      {
+        "name": "list_messages",
+        "description": "List email messages"
+      },
+      {
+        "name": "get_message",
+        "description": "Get a specific email message"
+      },
+      {
+        "name": "send_message",
+        "description": "Send an email message"
+      },
+      {
+        "name": "search_messages",
+        "description": "Search for messages"
+      }
+    ],
+    "slack": [
+      {
+        "name": "send_message",
+        "description": "Send a message to a Slack channel"
+      },
+      {
+        "name": "list_channels",
+        "description": "List Slack channels"
+      },
+      {
+        "name": "get_channel_history",
+        "description": "Get message history from a channel"
+      },
+      {
+        "name": "upload_file",
+        "description": "Upload a file to Slack"
+      }
+    ],
+    "notion": [
+      {
+        "name": "query_database",
+        "description": "Query a Notion database"
+      },
+      {
+        "name": "create_page",
+        "description": "Create a new Notion page"
+      },
+      {
+        "name": "update_page",
+        "description": "Update an existing page"
+      },
+      {
+        "name": "get_page",
+        "description": "Get page content"
+      }
+    ]
+  },
+  "security": {
+    "notes": [
+      "Store credentials securely and never commit them to version control",
+      "Use service accounts with minimal required permissions",
+      "Regularly rotate API keys and tokens",
+      "Monitor API usage and set up alerts for unusual activity",
+      "Consider using environment variables for sensitive data"
+    ]
+  },
+  "examples": {
+    "google_workspace": {
+      "google-drive": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-google-drive"],
+        "env": {
+          "GOOGLE_DRIVE_CREDENTIALS": "${GOOGLE_CREDENTIALS_PATH}",
+          "GOOGLE_DRIVE_TOKEN": "${GOOGLE_TOKEN_PATH}"
+        }
+      },
+      "gmail": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-gmail"],
+        "env": {
+          "GMAIL_CREDENTIALS": "${GMAIL_CREDENTIALS_PATH}",
+          "GMAIL_TOKEN": "${GMAIL_TOKEN_PATH}"
+        }
+      }
+    },
+    "team_communication": {
+      "slack": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-slack"],
+        "env": {
+          "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+          "SLACK_APP_TOKEN": "${SLACK_APP_TOKEN}"
+        }
+      }
+    },
+    "knowledge_management": {
+      "notion": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-notion"],
+        "env": {
+          "NOTION_API_KEY": "${NOTION_API_KEY}"
+        }
+      }
+    }
+  },
+  "use_cases": [
+    "Document management and collaboration",
+    "Email automation and processing",
+    "Team communication and notifications",
+    "Knowledge base management",
+    "Task and project tracking",
+    "File sharing and organization",
+    "Meeting notes and documentation"
+  ]
+}

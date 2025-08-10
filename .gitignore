@@ -74,6 +74,13 @@ frontend/build/
 frontend/.vercel
 frontend/.next/cache
 
+# ===== Next.js (Root) =====
+.next/
+out/
+dist/
+build/
+.vercel
+
 # Frontend environment files
 frontend/.env
 frontend/.env.local

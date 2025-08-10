@@ -1,0 +1,177 @@
+{
+  "name": "Development Tools",
+  "description": "Tools for software development including Git, GitHub, and database operations",
+  "category": "development",
+  "servers": {
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git", "/path/to/git/repository"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "your-github-token-here"
+      }
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "/path/to/database.db"]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@localhost:5432/database"
+      }
+    }
+  },
+  "setup": {
+    "dependencies": [
+      "@modelcontextprotocol/server-git",
+      "@modelcontextprotocol/server-github",
+      "@modelcontextprotocol/server-sqlite",
+      "@modelcontextprotocol/server-postgres"
+    ],
+    "installation": [
+      "npm install -g @modelcontextprotocol/server-git",
+      "npm install -g @modelcontextprotocol/server-github", 
+      "npm install -g @modelcontextprotocol/server-sqlite",
+      "npm install -g @modelcontextprotocol/server-postgres"
+    ],
+    "configuration": [
+      "Git: Specify the path to your Git repository",
+      "GitHub: Create a personal access token at https://github.com/settings/tokens",
+      "SQLite: Provide the path to your SQLite database file",
+      "PostgreSQL: Set up connection string with credentials"
+    ]
+  },
+  "tools": {
+    "git": [
+      {
+        "name": "git_status",
+        "description": "Get the status of the Git repository"
+      },
+      {
+        "name": "git_log",
+        "description": "View commit history"
+      },
+      {
+        "name": "git_diff",
+        "description": "Show differences between commits or files"
+      },
+      {
+        "name": "git_add",
+        "description": "Stage files for commit"
+      },
+      {
+        "name": "git_commit",
+        "description": "Create a new commit"
+      },
+      {
+        "name": "git_branch",
+        "description": "List, create, or switch branches"
+      }
+    ],
+    "github": [
+      {
+        "name": "create_repository",
+        "description": "Create a new GitHub repository"
+      },
+      {
+        "name": "get_repository",
+        "description": "Get repository information"
+      },
+      {
+        "name": "list_issues",
+        "description": "List issues in a repository"
+      },
+      {
+        "name": "create_issue",
+        "description": "Create a new issue"
+      },
+      {
+        "name": "list_pull_requests",
+        "description": "List pull requests"
+      },
+      {
+        "name": "create_pull_request",
+        "description": "Create a new pull request"
+      }
+    ],
+    "sqlite": [
+      {
+        "name": "execute_query",
+        "description": "Execute a SQL query"
+      },
+      {
+        "name": "list_tables",
+        "description": "List all tables in the database"
+      },
+      {
+        "name": "describe_table",
+        "description": "Get table schema information"
+      }
+    ],
+    "postgres": [
+      {
+        "name": "execute_query",
+        "description": "Execute a PostgreSQL query"
+      },
+      {
+        "name": "list_tables",
+        "description": "List all tables in the database"
+      },
+      {
+        "name": "describe_table",
+        "description": "Get table schema information"
+      }
+    ]
+  },
+  "security": {
+    "notes": [
+      "Git operations can modify your repository - use with caution",
+      "GitHub token should have minimal required permissions",
+      "Database connections should use read-only users when possible",
+      "Be careful with SQL queries - they can modify or delete data"
+    ]
+  },
+  "examples": {
+    "git_readonly": {
+      "git-readonly": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-git", "/Users/username/Projects/my-project"],
+        "env": {
+          "GIT_READONLY": "true"
+        }
+      }
+    },
+    "github_limited": {
+      "github": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}",
+          "GITHUB_REPOSITORY": "username/repository"
+        }
+      }
+    },
+    "database_readonly": {
+      "sqlite-readonly": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-sqlite", "/path/to/database.db"],
+        "env": {
+          "SQLITE_READONLY": "true"
+        }
+      }
+    }
+  },
+  "use_cases": [
+    "Code review and analysis",
+    "Automated Git operations",
+    "GitHub issue and PR management",
+    "Database queries and analysis",
+    "Project documentation generation",
+    "Code quality monitoring"
+  ]
+}
