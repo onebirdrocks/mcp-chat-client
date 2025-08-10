@@ -5,10 +5,10 @@ export const runtime = 'nodejs'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { toolCallId: string } }
+  context: { params: Promise<{ toolCallId: string }> }
 ) {
   try {
-    const { toolCallId } = params
+    const { toolCallId } = await context.params
     
     if (!toolCallId) {
       return NextResponse.json(
@@ -71,10 +71,10 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { toolCallId: string } }
+  context: { params: Promise<{ toolCallId: string }> }
 ) {
   try {
-    const { toolCallId } = params
+    const { toolCallId } = await context.params
     
     if (!toolCallId) {
       return NextResponse.json(

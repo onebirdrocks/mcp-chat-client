@@ -206,15 +206,15 @@
 
 ## Phase 2: Migration and Cleanup
 
-- [ ] 13. Data and configuration migration
-  - [ ] 13.1 Create migration utilities
+- [x] 13. Data and configuration migration
+  - [x] 13.1 Create migration utilities
     - Build migration scripts to transfer existing chat history to new format
     - Create configuration migration from old settings to new unified structure
     - Implement data validation and integrity checking during migration
     - Add rollback mechanisms in case of migration issues
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-  - [ ] 13.2 User data preservation
+  - [x] 13.2 User data preservation
     - Ensure all existing chat sessions are preserved during migration
     - Migrate user preferences and settings to new storage format
     - Convert existing API key configurations to new encrypted storage
@@ -222,19 +222,19 @@
     - _Requirements: 2.2, 7.2, 7.3, 11.5_
 
 - [ ] 14. Legacy code cleanup and optimization
-  - [ ] 14.1 Remove old architecture components
+  - [x] 14.1 Remove old architecture components
     - Safely remove src/ directory (Vite frontend) after confirming new implementation works
     - Clean up old backend/ directory API routes and services
     - Remove old dependencies that are no longer needed
     - Update package.json to reflect new unified architecture
     - _Requirements: 6.1, 6.2_
 
-  - [ ] 14.2 Final optimization and testing
+  - [x] 14.2 Final optimization and testing
     - Perform comprehensive testing of migrated functionality
     - Optimize bundle size and performance of new unified application
     - Ensure all features from old implementation work in new architecture
     - Create regression tests to prevent functionality loss
-    - _Requirements: All requirements_
+    - _Requirements: All requirements_q
 
 - [ ] 15. Documentation and deployment finalization
   - [ ] 15.1 Update documentation for new architecture

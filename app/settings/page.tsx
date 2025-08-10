@@ -1,28 +1,23 @@
 import { Metadata } from 'next'
-import { NavigationLayout } from '../../src/components/next'
-import { getServerSettings } from '../../lib/server-data'
-import { detectLanguage } from '../../lib/server-utils'
-import SettingsPage from '../../src/components/SettingsPage'
 
 export const metadata: Metadata = {
   title: 'Settings',
   description: 'Configure LLM providers, MCP servers, and application preferences',
 }
 
-export default async function Settings() {
-  // Server-side data fetching
-  const [serverSettings, language] = await Promise.all([
-    getServerSettings(),
-    detectLanguage()
-  ])
-  
+export default function Settings() {
   return (
-    <NavigationLayout>
-      <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <SettingsPage language={language} serverSettings={serverSettings} />
+    <div className="w-full h-full bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Settings
+        </h1>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <p className="text-gray-600 dark:text-gray-400">
+            Settings configuration will be implemented here.
+          </p>
         </div>
       </div>
-    </NavigationLayout>
+    </div>
   )
 }

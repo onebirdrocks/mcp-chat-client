@@ -4,19 +4,13 @@ import { mcpConfigManager } from '../../../../../../lib/mcp-config'
 
 export const runtime = 'nodejs'
 
-interface RouteParams {
-  params: {
-    serverId: string
-  }
-}
-
 /**
  * POST /api/settings/mcp-servers/[serverId]/test
  * Test connection to a specific MCP server
  */
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(request: NextRequest, context: { params: Promise<{ serverId: string }> }) {
   try {
-    const { serverId } = params
+    const { serverId } = await context.params
     
     // Get server configuration
     const serverConfig = await mcpConfigManager.getServerConfig(serverId)

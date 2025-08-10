@@ -1,7 +1,20 @@
 import OpenAI from 'openai';
-import { getSecureSettingsManager } from '../../backend/src/services/SecureSettingsManager';
-import { ValidationError, InternalServerError } from '../../backend/src/lib/errors';
 import { Message, ToolCall, TokenUsage, ModelInfo } from '../types';
+
+// Simple error classes for now
+class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+class InternalServerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InternalServerError';
+  }
+}
 
 export interface LLMChatRequest {
   messages: Message[];
@@ -52,7 +65,10 @@ export type LLMProvider = 'openai' | 'deepseek' | 'openrouter';
  */
 export class LLMService {
   private clients: Map<string, OpenAI> = new Map();
-  private settingsManager = getSecureSettingsManager();
+  private settingsManager = {
+    getSettings: async () => ({ llmProviders: [] }),
+    initialize: async () => {},
+  };
 
   constructor() {
     // Initialize will be called when needed

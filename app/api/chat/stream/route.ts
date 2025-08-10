@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatRequest } from '@/lib/types'
-import { getEnabledMCPServerIds } from '@/lib/mcp-utils'
-import { getLLMService } from '@/lib/services'
-import { getMCPClientManager } from '@/lib/services'
-import { ValidationError, InternalServerError } from '@/backend/src/lib/errors'
+import { ChatRequest } from '../../../../lib/types'
+import { getEnabledMCPServerIds } from '../../../../lib/mcp-utils'
+import { LLMService } from '../../../../lib/services/LLMService'
+import { MCPClientManager } from '../../../../lib/services/MCPClientManager'
 import { v4 as uuidv4 } from 'uuid'
+
+// Simple error classes for now
+class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+class InternalServerError extends Error {
+  public statusCode: number;
+  constructor(message: string, statusCode: number = 500) {
+    super(message);
+    this.name = 'InternalServerError';
+    this.statusCode = statusCode;
+  }
+}
 
 export const runtime = 'nodejs'
 
@@ -44,12 +60,12 @@ export async function POST(request: NextRequest) {
     const tools: any[] = []
     if (allowedServers.length > 0) {
       try {
-        const mcpManager = getMCPClientManager()
+        const mcpManager = new MCPClientManager()
         await mcpManager.initialize()
         
         // Get tools from all allowed servers
         for (const serverId of allowedServers) {
-          const serverTools = await mcpManager.getAvailableTools(serverId)
+          const serverTools = mcpManager.getServerTools(serverId)
           const formattedTools = serverTools.map(tool => ({
             type: 'function',
             function: {
@@ -67,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Initialize LLM service
-    const llmService = getLLMService()
+    const llmService = new LLMService()
     await llmService.initialize()
     
     // Create a readable stream for Server-Sent Events

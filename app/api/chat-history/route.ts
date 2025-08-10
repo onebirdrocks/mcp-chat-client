@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionManager } from '../../../backend/src/services/SessionManager';
-import { ValidationError, NotFoundError } from '../../../backend/src/lib/errors';
+import { SessionManager } from '../../../lib/services/SessionManager';
+
+// Simple error classes for now
+class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
 
 export const runtime = 'nodejs';
 
@@ -66,7 +80,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const sessionManager = getSessionManager();
+    const sessionManager = new SessionManager();
     await sessionManager.initialize();
     
     const searchOptions = {
@@ -128,7 +142,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const sessionManager = getSessionManager();
+    const sessionManager = new SessionManager();
     await sessionManager.initialize();
     
     let deletedCount = 0;

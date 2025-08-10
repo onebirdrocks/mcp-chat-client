@@ -1,4 +1,10 @@
-import { GetStaticPropsContext } from 'next';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Import translations
+import enTranslations from './locales/en/translation.json';
+import zhTranslations from './locales/zh/translation.json';
 
 export const SUPPORTED_LOCALES = ['en', 'zh'] as const;
 export type SupportedLocale = typeof SUPPORTED_LOCALES[number];
@@ -10,20 +16,32 @@ export const LOCALE_NAMES: Record<SupportedLocale, string> = {
   zh: '中文',
 };
 
-/**
- * Get locale from Next.js context
- */
-export function getLocaleFromContext(context: GetStaticPropsContext): SupportedLocale {
-  const locale = context.locale as SupportedLocale;
-  return SUPPORTED_LOCALES.includes(locale) ? locale : DEFAULT_LOCALE;
-}
+// Initialize i18next
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: {
+        translation: enTranslations,
+      },
+      zh: {
+        translation: zhTranslations,
+      },
+    },
+    lng: DEFAULT_LOCALE,
+    fallbackLng: DEFAULT_LOCALE,
+    supportedLngs: SUPPORTED_LOCALES,
+    interpolation: {
+      escapeValue: false,
+    },
+    detection: {
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      caches: ['localStorage'],
+    },
+  });
 
-/**
- * Get all supported locales for static generation
- */
-export function getAllLocales(): SupportedLocale[] {
-  return [...SUPPORTED_LOCALES];
-}
+export default i18n;
 
 /**
  * Check if a locale is supported
@@ -49,21 +67,6 @@ export function detectBrowserLanguage(): SupportedLocale {
   const langCode = browserLang.split('-')[0] as SupportedLocale;
   
   return isSupportedLocale(langCode) ? langCode : DEFAULT_LOCALE;
-}
-
-/**
- * Load translations for a specific locale
- */
-export async function loadTranslations(locale: SupportedLocale) {
-  try {
-    // Dynamic import based on locale
-    const translations = await import(`../src/locales/${locale}/translation.json`);
-    return translations.default;
-  } catch (error) {
-    console.warn(`Failed to load translations for locale ${locale}, falling back to default`);
-    const fallbackTranslations = await import(`../src/locales/${DEFAULT_LOCALE}/translation.json`);
-    return fallbackTranslations.default;
-  }
 }
 
 /**

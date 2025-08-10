@@ -1,22 +1,408 @@
 {
   "sessions": {
-    "session_1754791632783_jbm0x5rge": {
-      "id": "session_1754791632783_jbm0x5rge",
-      "title": "Test Chat Session",
-      "messages": [],
-      "createdAt": "2025-08-10T02:07:12.783Z",
-      "updatedAt": "2025-08-10T02:07:12.783Z",
+    "session_1754622370947_hwsb48061": {
+      "id": "session_1754622370947_hwsb48061",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me28uu1xwi7afwffj5q",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:06:10.725Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:06:10.947Z",
+      "updatedAt": "2025-08-08T03:06:10.947Z",
       "provider": "openai",
       "model": "gpt-4",
-      "mcpServers": [
-        "filesystem-1"
-      ]
+      "mcpServers": []
+    },
+    "session_1754622636036_6l3wfv2j9": {
+      "id": "session_1754622636036_6l3wfv2j9",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me290ios8lnpfqdx9pu",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:10:35.932Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:10:36.036Z",
+      "updatedAt": "2025-08-08T03:10:36.036Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754622697216_yikcgtz39": {
+      "id": "session_1754622697216_yikcgtz39",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me291txysncnxbf33m",
+          "role": "user",
+          "content": "dfdf",
+          "timestamp": "2025-08-08T03:11:37.174Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:11:37.216Z",
+      "updatedAt": "2025-08-08T03:11:37.216Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754623452387_bp4psk5kn": {
+      "id": "session_1754623452387_bp4psk5kn",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me29i0n7b34fjjxzxq",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:24:12.355Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:24:12.387Z",
+      "updatedAt": "2025-08-08T03:24:12.387Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754623883886_ojsb422of": {
+      "id": "session_1754623883886_ojsb422of",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me29r9kxh71znq6wvsd",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:31:23.841Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:31:23.886Z",
+      "updatedAt": "2025-08-08T03:31:23.886Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754624270799_hw7815tmi": {
+      "id": "session_1754624270799_hw7815tmi",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me29zk26xdamo2ys7g",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:37:50.670Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:37:50.799Z",
+      "updatedAt": "2025-08-08T03:37:50.799Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754624313384_2onmgs5hw": {
+      "id": "session_1754624313384_2onmgs5hw",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me29zk26xdamo2ys7g",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:37:50.670Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:38:33.384Z",
+      "updatedAt": "2025-08-08T03:38:33.384Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754624442876_icabyhbcl": {
+      "id": "session_1754624442876_icabyhbcl",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me2a38whkv98rjzrbuj",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:40:42.833Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:40:42.876Z",
+      "updatedAt": "2025-08-08T03:40:42.876Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754624658941_lgv85cm3p": {
+      "id": "session_1754624658941_lgv85cm3p",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me2a7vm7elhi2pjhjo",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:44:18.895Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:44:18.941Z",
+      "updatedAt": "2025-08-08T03:44:18.941Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754625044376_mqbegvfwj": {
+      "id": "session_1754625044376_mqbegvfwj",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me2a7vm7elhi2pjhjo",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:44:18.895Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:50:44.376Z",
+      "updatedAt": "2025-08-08T03:50:44.376Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754625053162_nzxsu527c": {
+      "id": "session_1754625053162_nzxsu527c",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me2a7vm7elhi2pjhjo",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:44:18.895Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:50:53.162Z",
+      "updatedAt": "2025-08-08T03:50:53.162Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754625056992_7rre1feb2": {
+      "id": "session_1754625056992_7rre1feb2",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me2a7vm7elhi2pjhjo",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:44:18.895Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:50:56.992Z",
+      "updatedAt": "2025-08-08T03:50:56.992Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754625072188_qo9cvvijh": {
+      "id": "session_1754625072188_qo9cvvijh",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "me2a7vm7elhi2pjhjo",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2025-08-08T03:44:18.895Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T03:51:12.188Z",
+      "updatedAt": "2025-08-08T03:51:12.188Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": []
+    },
+    "session_1754651454427_ylgoufgwx": {
+      "id": "session_1754651454427_ylgoufgwx",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "msg_001",
+          "role": "user",
+          "content": "Hello, can you help me test this chat interface?",
+          "timestamp": "2025-08-08T11:10:54.424Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T11:10:54.427Z",
+      "updatedAt": "2025-08-08T11:10:54.427Z",
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "mcpServers": []
+    },
+    "session_1754651797444_17lsnn7rp": {
+      "id": "session_1754651797444_17lsnn7rp",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "test_msg_001",
+          "role": "user",
+          "content": "Hello, this is a test message",
+          "timestamp": "2025-08-08T11:16:37.442Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T11:16:37.444Z",
+      "updatedAt": "2025-08-08T11:16:37.444Z",
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "mcpServers": []
+    },
+    "session_1754652061227_tbalnm6xr": {
+      "id": "session_1754652061227_tbalnm6xr",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "test_msg_1754652061199",
+          "role": "user",
+          "content": "Hello from frontend test",
+          "timestamp": "2025-08-08T11:21:01.199Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T11:21:01.227Z",
+      "updatedAt": "2025-08-08T11:21:01.227Z",
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "mcpServers": []
+    },
+    "session_1754652251125_17brq1z8d": {
+      "id": "session_1754652251125_17brq1z8d",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "test_msg_1754652250926",
+          "role": "user",
+          "content": "Hello from frontend test",
+          "timestamp": "2025-08-08T11:24:10.926Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T11:24:11.125Z",
+      "updatedAt": "2025-08-08T11:24:11.125Z",
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "mcpServers": []
+    },
+    "session_1754652647493_rifj6la87": {
+      "id": "session_1754652647493_rifj6la87",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "deepseek_test_1754652647434",
+          "role": "user",
+          "content": "你好，请用中文回复我",
+          "timestamp": "2025-08-08T11:30:47.492Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T11:30:47.493Z",
+      "updatedAt": "2025-08-08T11:30:47.493Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": []
+    },
+    "session_1754652672905_7ja4erzm3": {
+      "id": "session_1754652672905_7ja4erzm3",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "test_deepseek_001",
+          "role": "user",
+          "content": "你好，请介绍一下你自己",
+          "timestamp": "2025-08-08T11:31:12.904Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T11:31:12.905Z",
+      "updatedAt": "2025-08-08T11:31:12.905Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": []
+    },
+    "session_1754652838760_8wye9rsui": {
+      "id": "session_1754652838760_8wye9rsui",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "frontend_test_1754652838750",
+          "role": "user",
+          "content": "Hello from frontend diagnosis",
+          "timestamp": "2025-08-08T11:33:58.750Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T11:33:58.760Z",
+      "updatedAt": "2025-08-08T11:33:58.760Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": []
+    },
+    "session_1754654435428_xbruu7fyy": {
+      "id": "session_1754654435428_xbruu7fyy",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "test_msg_001",
+          "role": "user",
+          "content": "你好，请用中文回复",
+          "timestamp": "2025-08-08T12:00:35.424Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T12:00:35.428Z",
+      "updatedAt": "2025-08-08T12:00:35.428Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": []
+    },
+    "session_1754660077245_9pv28qb4i": {
+      "id": "session_1754660077245_9pv28qb4i",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "frontend_test_1754660077184",
+          "role": "user",
+          "content": "Hello from frontend diagnosis",
+          "timestamp": "2025-08-08T13:34:37.184Z",
+          "metadata": {}
+        }
+      ],
+      "createdAt": "2025-08-08T13:34:37.245Z",
+      "updatedAt": "2025-08-08T13:34:37.245Z",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "mcpServers": []
     }
   },
   "metadata": {
-    "lastCleanup": "2025-08-10T02:07:12.793Z",
-    "totalSessions": 1,
-    "version": "1.0.0",
-    "encrypted": false
+    "lastCleanup": "2025-08-10T06:33:08.402Z",
+    "totalSessions": 22,
+    "version": "2.0.0",
+    "encrypted": false,
+    "migratedFrom": "backend/data/sessions/sessions.json",
+    "migrationDate": "2025-08-10T06:33:08.402Z"
   }
 }
