@@ -2,25 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Badge, Alert, Spinner } from './ui';
 import { useAccessibility } from '../hooks/useAccessibility';
-import type { ToolCall } from '../types';
+import { useChatStore } from '../store/chatStore';
+import { chatApi } from '../services/apiClient';
+import type { ToolCall, ToolExecutionStatus, ToolExecutionProgress } from '../types';
 
 export interface ToolConfirmationDialogProps {
   isOpen: boolean;
   toolCall: ToolCall | null;
   onConfirm: (toolCall: ToolCall) => void | Promise<void>;
   onCancel: () => void;
-  isExecuting?: boolean;
-  executionProgress?: {
-    stage: 'validating' | 'connecting' | 'executing' | 'processing' | 'completed';
-    message?: string;
-    progress?: number; // 0-100
-  };
-  executionResult?: {
-    success: boolean;
-    result?: string;
-    error?: string;
-    executionTime?: number;
-  };
 }
 
 const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
@@ -28,39 +18,86 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
   toolCall,
   onConfirm,
   onCancel,
-  isExecuting = false,
-  executionProgress,
-  executionResult,
 }) => {
   const { t } = useTranslation();
   const [isConfirming, setIsConfirming] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [executionStatus, setExecutionStatus] = useState<ToolExecutionStatus | null>(null);
+  const [executionProgress, setExecutionProgress] = useState<ToolExecutionProgress | null>(null);
+  const [executionResult, setExecutionResult] = useState<{
+    success: boolean;
+    result?: string;
+    error?: string;
+    executionTime?: number;
+  } | null>(null);
+  
   const { focus, keyboard } = useAccessibility();
+  const { getActiveToolExecutions, cancelToolExecution } = useChatStore();
   
   // Use focus trap for modal
   const modalRef = React.useRef<HTMLDivElement>(null);
   keyboard.useFocusTrap(modalRef, isOpen);
   focus.useFocusReturn(isOpen);
 
-  // Show result when execution completes
+  // Monitor tool execution status
   useEffect(() => {
-    if (executionResult && (executionResult.success || executionResult.error)) {
-      setShowResult(true);
-      // Auto-hide result after 3 seconds if successful
-      if (executionResult.success) {
-        const timer = setTimeout(() => {
-          setShowResult(false);
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
+    if (!toolCall || !isOpen) return;
+
+    const activeExecutions = getActiveToolExecutions();
+    const activeExecution = activeExecutions.find(exec => exec.toolCall.id === toolCall.id);
+
+    if (activeExecution) {
+      setExecutionStatus(activeExecution.status);
+      setExecutionProgress(activeExecution.progress || null);
+      setIsConfirming(true);
+    } else {
+      setExecutionStatus(null);
+      setExecutionProgress(null);
+      setIsConfirming(false);
     }
-  }, [executionResult]);
+  }, [toolCall, isOpen, getActiveToolExecutions]);
+
+  // Poll for execution status updates
+  useEffect(() => {
+    if (!toolCall || !isConfirming) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const status = await chatApi.getToolExecutionStatus(toolCall.id);
+        
+        if (status.status === 'completed') {
+          setExecutionResult({
+            success: !status.error,
+            result: status.result,
+            error: status.error,
+            executionTime: status.executionTime,
+          });
+          setShowResult(true);
+          setIsConfirming(false);
+          
+          // Auto-hide result after 3 seconds if successful
+          if (!status.error) {
+            setTimeout(() => {
+              setShowResult(false);
+            }, 3000);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to poll tool execution status:', error);
+      }
+    }, 1000);
+
+    return () => clearInterval(pollInterval);
+  }, [toolCall, isConfirming]);
 
   // Reset states when dialog opens/closes
   useEffect(() => {
     if (!isOpen) {
       setIsConfirming(false);
       setShowResult(false);
+      setExecutionStatus(null);
+      setExecutionProgress(null);
+      setExecutionResult(null);
     }
   }, [isOpen]);
 
@@ -79,8 +116,15 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
     }
   };
 
-  const handleCancel = () => {
-    if (!isConfirming && !isExecuting) {
+  const handleCancel = async () => {
+    if (isConfirming && toolCall) {
+      // Cancel the executing tool
+      try {
+        await cancelToolExecution(toolCall.id);
+      } catch (error) {
+        console.error('Failed to cancel tool execution:', error);
+      }
+    } else if (!isConfirming) {
       onCancel();
     }
   };
@@ -215,6 +259,8 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
 
   const getProgressMessage = (stage: string): string => {
     switch (stage) {
+      case 'pending':
+        return t('chat.toolPending', 'Preparing to execute...');
       case 'validating':
         return t('chat.toolValidating', 'Validating parameters...');
       case 'connecting':
@@ -225,10 +271,18 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
         return t('chat.toolProcessing', 'Processing results...');
       case 'completed':
         return t('chat.toolCompleted', 'Execution completed');
+      case 'failed':
+        return t('chat.toolFailed', 'Execution failed');
+      case 'cancelled':
+        return t('chat.toolCancelled', 'Execution cancelled');
+      case 'timeout':
+        return t('chat.toolTimeout', 'Execution timed out');
       default:
         return t('chat.toolWorking', 'Working...');
     }
   };
+
+  const isExecuting = isConfirming && executionStatus && !['completed', 'failed', 'cancelled', 'timeout'].includes(executionStatus.stage);
 
   return (
     <Modal
@@ -428,7 +482,7 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
         )}
 
         {/* Execution Progress */}
-        {(isExecuting || isConfirming) && executionProgress && (
+        {isExecuting && (executionStatus || executionProgress) && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <div className="flex items-center gap-3 mb-3">
               <Spinner size="sm" className="text-blue-600 dark:text-blue-400" />
@@ -437,30 +491,39 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
                   {t('chat.toolExecuting', 'Executing Tool')}
                 </h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  {getProgressMessage(executionProgress.stage)}
+                  {executionStatus ? getProgressMessage(executionStatus.stage) : 
+                   executionProgress ? getProgressMessage(executionProgress.stage) : 
+                   t('chat.toolWorking', 'Working...')}
                 </p>
               </div>
             </div>
             
             {/* Progress Bar */}
-            {executionProgress.progress !== undefined && (
+            {(executionProgress?.progress !== undefined || executionStatus?.progress !== undefined) && (
               <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mb-2">
                 <div 
                   className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${Math.max(0, Math.min(100, executionProgress.progress))}%` }}
+                  style={{ width: `${Math.max(0, Math.min(100, executionProgress?.progress || executionStatus?.progress || 0))}%` }}
                   role="progressbar"
-                  aria-valuenow={executionProgress.progress}
+                  aria-valuenow={executionProgress?.progress || executionStatus?.progress || 0}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`Tool execution progress: ${executionProgress.progress}%`}
+                  aria-label={`Tool execution progress: ${executionProgress?.progress || executionStatus?.progress || 0}%`}
                 />
               </div>
             )}
             
             {/* Custom Progress Message */}
-            {executionProgress.message && (
+            {(executionProgress?.message || executionStatus?.message) && (
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                {executionProgress.message}
+                {executionProgress?.message || executionStatus?.message}
+              </p>
+            )}
+            
+            {/* Execution Time */}
+            {executionStatus && (
+              <p className="text-xs text-blue-500 dark:text-blue-400 mt-2">
+                {t('chat.executionTime', 'Execution time')}: {Math.round((Date.now() - new Date(executionStatus.timestamp).getTime()) / 1000)}s
               </p>
             )}
           </div>
@@ -584,11 +647,11 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
               <Button
                 variant="ghost"
                 onClick={handleCancel}
-                disabled={isConfirming || isExecuting}
-                aria-label={t('chat.cancelToolExecution', 'Cancel tool execution')}
+                disabled={false} // Always allow cancel
+                aria-label={isConfirming ? t('chat.cancelToolExecution', 'Cancel tool execution') : t('chat.cancelDialog', 'Cancel dialog')}
                 shortcut="Esc"
               >
-                {t('chat.cancelTool', 'Cancel')}
+                {isConfirming ? t('chat.cancelExecution', 'Cancel Execution') : t('chat.cancelTool', 'Cancel')}
               </Button>
               
               <Button

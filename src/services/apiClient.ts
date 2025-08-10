@@ -358,6 +358,18 @@ apiClient.addErrorInterceptor((error) => {
   return error;
 });
 
+// Streaming response types
+export interface StreamChunk {
+  type: 'start' | 'content' | 'tool_calls' | 'done' | 'error';
+  content?: string;
+  toolCalls?: any[];
+  sessionId?: string;
+  messageId?: string;
+  usage?: any;
+  error?: string;
+  timestamp?: string;
+}
+
 // Type-safe API methods
 export const chatApi = {
   // Send a chat message
@@ -371,6 +383,106 @@ export const chatApi = {
     });
   },
 
+  // Send a streaming chat message
+  sendMessageStream: async function* (request: ChatRequest): AsyncGenerator<StreamChunk> {
+    console.log('🌐 API Client: Sending streaming chat request to /chat/stream', {
+      ...request,
+      // Note: API key is now handled securely by the backend
+    });
+
+    const fullUrl = `${API_BASE_URL}/chat/stream`;
+    
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // Use default error message if can't parse JSON
+        }
+        
+        yield {
+          type: 'error',
+          error: errorMessage,
+          sessionId: request.sessionId,
+        };
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        yield {
+          type: 'error',
+          error: 'No response body available',
+          sessionId: request.sessionId,
+        };
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Process complete lines
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            
+            if (trimmedLine.startsWith('data: ')) {
+              const dataStr = trimmedLine.slice(6); // Remove 'data: ' prefix
+              
+              if (dataStr === '[DONE]') {
+                return;
+              }
+
+              try {
+                const chunk: StreamChunk = JSON.parse(dataStr);
+                yield chunk;
+                
+                if (chunk.type === 'error' || chunk.type === 'done') {
+                  return;
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse streaming chunk:', dataStr, parseError);
+                // Continue processing other chunks
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      console.error('Streaming request failed:', error);
+      yield {
+        type: 'error',
+        error: error instanceof Error ? error.message : 'Streaming request failed',
+        sessionId: request.sessionId,
+      };
+    }
+  },
+
   // Execute a tool
   runTool: (request: RunToolRequest): Promise<RunToolResponse> => {
     return apiClient.post<RunToolResponse>('/run-tool', request, {
@@ -381,6 +493,92 @@ export const chatApi = {
   // Cancel tool execution
   cancelTool: (sessionId: string): Promise<{ success: boolean }> => {
     return apiClient.post<{ success: boolean }>('/cancel-tool', { sessionId });
+  },
+
+  // Get tool execution status
+  getToolExecutionStatus: (toolCallId: string): Promise<{
+    status: 'active' | 'completed';
+    toolCallId: string;
+    sessionId: string;
+    startTime: string;
+    endTime?: string;
+    executionTime?: number;
+    toolName: string;
+    serverId: string;
+    result?: string;
+    error?: string;
+    progress?: any[];
+  }> => {
+    return apiClient.get(`/tool-execution/${toolCallId}/status`);
+  },
+
+  // Cancel specific tool execution
+  cancelToolExecution: (toolCallId: string): Promise<{
+    success: boolean;
+    message: string;
+    toolCallId: string;
+  }> => {
+    return apiClient.delete(`/tool-execution/${toolCallId}/status`);
+  },
+
+  // Get tool execution history
+  getToolExecutionHistory: (sessionId?: string, limit?: number, includeStats?: boolean): Promise<{
+    history: any[];
+    total: number;
+    stats?: any;
+  }> => {
+    const params = new URLSearchParams();
+    if (sessionId) params.append('sessionId', sessionId);
+    if (limit) params.append('limit', limit.toString());
+    if (includeStats) params.append('includeStats', 'true');
+    
+    const queryString = params.toString();
+    const url = `/tool-execution/history${queryString ? `?${queryString}` : ''}`;
+    
+    return apiClient.get(url);
+  },
+
+  // Clear tool execution history
+  clearToolExecutionHistory: (sessionId?: string): Promise<{
+    success: boolean;
+    message: string;
+  }> => {
+    const params = new URLSearchParams();
+    if (sessionId) params.append('sessionId', sessionId);
+    
+    const queryString = params.toString();
+    const url = `/tool-execution/history${queryString ? `?${queryString}` : ''}`;
+    
+    return apiClient.delete(url);
+  },
+
+  // Get active tool executions
+  getActiveToolExecutions: (sessionId?: string): Promise<{
+    activeExecutions: any[];
+    total: number;
+  }> => {
+    const params = new URLSearchParams();
+    if (sessionId) params.append('sessionId', sessionId);
+    
+    const queryString = params.toString();
+    const url = `/tool-execution/active${queryString ? `?${queryString}` : ''}`;
+    
+    return apiClient.get(url);
+  },
+
+  // Cancel all active tool executions
+  cancelAllActiveExecutions: (sessionId?: string): Promise<{
+    success: boolean;
+    message: string;
+    cancelledCount: number;
+  }> => {
+    const params = new URLSearchParams();
+    if (sessionId) params.append('sessionId', sessionId);
+    
+    const queryString = params.toString();
+    const url = `/tool-execution/active${queryString ? `?${queryString}` : ''}`;
+    
+    return apiClient.delete(url);
   },
 
   // Get chat history

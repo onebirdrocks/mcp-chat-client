@@ -36,7 +36,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
     isLoading,
     pendingToolCall,
     error: storeError,
+    isStreaming,
+    streamingContent,
     sendMessage,
+    sendMessageStream,
+    cancelStreaming,
     deleteMessage,
     confirmToolCall,
     cancelToolCall,
@@ -52,7 +56,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
   );
 
   // Enhanced send message with error handling and real-time feedback
-  const handleSendMessage = useCallback(async (content: string) => {
+  const handleSendMessage = useCallback(async (content: string, useStreaming: boolean = true) => {
     // Clear local error state
     setError(null);
     
@@ -71,7 +75,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
     }
 
     try {
-      await sendMessage(content);
+      if (useStreaming) {
+        await sendMessageStream(content);
+      } else {
+        await sendMessage(content, false);
+      }
       // Clear local error on successful send
       setError(null);
       // Announce message sent to screen readers
@@ -81,7 +89,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
       console.error('Chat interface: Message send failed:', error);
       screenReaderUtils.announceError('Failed to send message', 'Chat');
     }
-  }, [currentSession, hasValidProvider, sendMessage, setError, screenReaderUtils, t]);
+  }, [currentSession, hasValidProvider, sendMessage, sendMessageStream, setError, screenReaderUtils, t]);
 
   // Enhanced tool confirmation with error handling and accessibility
   const handleConfirmToolCall = useCallback(async (toolCall: ToolCall) => {
@@ -247,13 +255,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
       >
         <MessageList
           messages={messages}
-          isLoading={isLoading}
+          isLoading={isLoading && !isStreaming}
+          streamingMessage={isStreaming ? streamingContent : undefined}
           autoScroll={true}
           onDeleteMessage={handleDeleteMessage}
           className={`h-full ${isMobile ? 'p-2' : isTablet ? 'p-4' : 'p-6'}`}
           isMobile={isMobile}
           isTouch={isTouch}
         />
+
+        {/* Cancel streaming button */}
+        {isStreaming && (
+          <div className={`absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 ${isMobile ? 'mb-2' : 'mb-4'}`}>
+            <button
+              onClick={() => {
+                cancelStreaming();
+                screenReaderUtils.announceSuccess('Streaming cancelled', 'Chat');
+              }}
+              className={`
+                bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full shadow-lg transition-colors duration-200 
+                focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2
+                flex items-center gap-2 font-medium
+                ${isMobile ? 'text-sm px-3 py-2' : 'text-sm'}
+                ${isTouch ? 'touch-manipulation min-h-[44px]' : ''}
+              `}
+              aria-label={t('chat.cancelStreaming', 'Cancel streaming response')}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              {t('chat.cancelStreaming', 'Cancel')}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Input area - Fixed at bottom with auto-resize */}
@@ -263,12 +297,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
       >
         <MessageInput
           onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          disabled={!hasValidProvider}
+          isLoading={isLoading || isStreaming}
+          disabled={!hasValidProvider || isStreaming}
           placeholder={
-            hasValidProvider 
-              ? t('chat.messagePlaceholder', 'Type your message...')
-              : t('chat.configureProviderFirst', 'Configure an LLM provider in settings first')
+            isStreaming
+              ? t('chat.streamingInProgress', 'Streaming response in progress...')
+              : hasValidProvider 
+                ? t('chat.messagePlaceholder', 'Type your message...')
+                : t('chat.configureProviderFirst', 'Configure an LLM provider in settings first')
           }
           isMobile={isMobile}
           isTouch={isTouch}

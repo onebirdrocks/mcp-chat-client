@@ -29,6 +29,47 @@ export interface ToolCall {
   executionTime?: number;
   result?: string;
   error?: string;
+  status?: ToolExecutionStatus;
+  progress?: ToolExecutionProgress;
+  executionHistory?: ToolExecutionHistoryEntry[];
+}
+
+export interface ToolExecutionStatus {
+  stage: 'pending' | 'validating' | 'connecting' | 'executing' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'timeout';
+  message?: string;
+  timestamp: Date;
+  progress?: number; // 0-100
+  estimatedTimeRemaining?: number; // milliseconds
+}
+
+export interface ToolExecutionProgress {
+  stage: 'validating' | 'connecting' | 'executing' | 'processing' | 'completed';
+  message?: string;
+  progress?: number; // 0-100
+  timestamp: Date;
+  details?: Record<string, any>;
+}
+
+export interface ToolExecutionHistoryEntry {
+  id: string;
+  toolCallId: string;
+  sessionId: string;
+  toolName: string;
+  serverId: string;
+  status: 'success' | 'error' | 'timeout' | 'cancelled';
+  startTime: Date;
+  endTime?: Date;
+  executionTime?: number;
+  parameters: Record<string, any>;
+  result?: string;
+  error?: string;
+  progress?: ToolExecutionProgress[];
+  metadata?: {
+    retryCount?: number;
+    timeoutDuration?: number;
+    memoryUsage?: number;
+    cpuUsage?: number;
+  };
 }
 
 export interface ChatSession {
@@ -135,6 +176,8 @@ export interface RunToolRequest {
   sessionId: string;
   messages: Message[];
   approved: boolean;
+  timeout?: number; // milliseconds
+  enableRealTimeUpdates?: boolean;
 }
 
 export interface RunToolResponse {
@@ -144,6 +187,26 @@ export interface RunToolResponse {
   executionTime: number;
   messageId?: string;
   usage?: TokenUsage;
+  status?: ToolExecutionStatus;
+  historyEntry?: ToolExecutionHistoryEntry;
+}
+
+export interface ToolExecutionUpdate {
+  type: 'status' | 'progress' | 'error' | 'timeout' | 'completed';
+  toolCallId: string;
+  sessionId: string;
+  status?: ToolExecutionStatus;
+  progress?: ToolExecutionProgress;
+  error?: string;
+  result?: string;
+  timestamp: Date;
+}
+
+export interface ToolExecutionTimeoutConfig {
+  default: number; // Default timeout in milliseconds
+  perTool: Record<string, number>; // Tool-specific timeouts
+  maxTimeout: number; // Maximum allowed timeout
+  warningThreshold: number; // Show warning after this duration
 }
 
 export interface CancelToolRequest {

@@ -36,6 +36,8 @@
     "runTool": "运行工具",
     "cancelTool": "取消工具",
     "messagePlaceholder": "在此输入您的消息...",
+    "streamingInProgress": "正在流式响应中...",
+    "cancelStreaming": "取消",
     "noSession": "无对话会话",
     "createNewChat": "创建新对话以开始与 AI 助手的对话。",
     "configureProviderFirst": "请先在设置中配置 LLM 提供商",

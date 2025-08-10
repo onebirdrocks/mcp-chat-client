@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     ) || []
     
     // Get available tools from MCP servers
-    let tools: any[] = []
+    const tools: any[] = []
     if (allowedServers.length > 0) {
       try {
         const mcpManager = getMCPClientManager()

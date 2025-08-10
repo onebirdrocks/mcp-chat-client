@@ -1,55 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { RunToolRequest, RunToolResponse, Message } from '@/lib/types'
+import { RunToolRequest, RunToolResponse, Message, ToolExecutionUpdate } from '@/lib/types'
 import { getMCPServerConfig } from '@/lib/mcp-utils'
+import { toolExecutionManager } from '@/lib/services/ToolExecutionManager'
 import { v4 as uuidv4 } from 'uuid'
 
 export const runtime = 'nodejs'
-
-// Mock MCP client manager - will be replaced with actual implementation in later tasks
-class MockMCPClientManager {
-  async executeTool(serverId: string, toolName: string, args: unknown): Promise<{
-    result: string;
-    executionTime: number;
-    error?: string;
-  }> {
-    // Simulate tool execution delay
-    const startTime = Date.now()
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    const executionTime = Date.now() - startTime
-    
-    // Mock different tool responses
-    if (toolName.includes('read_file')) {
-      const argsObj = args as { path?: string }
-      return {
-        result: JSON.stringify({
-          content: 'This is mock file content from the filesystem tool.',
-          path: argsObj.path || '/example/file.txt',
-          size: 1024
-        }),
-        executionTime
-      }
-    }
-    
-    if (toolName.includes('error')) {
-      return {
-        result: '',
-        executionTime,
-        error: 'Mock tool execution error'
-      }
-    }
-    
-    // Default mock response
-    return {
-      result: JSON.stringify({
-        message: `Tool ${toolName} executed successfully`,
-        serverId,
-        arguments: args,
-        timestamp: new Date().toISOString()
-      }),
-      executionTime
-    }
-  }
-}
 
 // Mock LLM service for continuation after tool execution
 class MockLLMService {
@@ -72,8 +27,10 @@ class MockLLMService {
   }
 }
 
-const mockMCPClient = new MockMCPClientManager()
 const mockLLMService = new MockLLMService()
+
+// Store for real-time updates (in production, this would use WebSockets or SSE)
+const executionUpdates = new Map<string, ToolExecutionUpdate[]>()
 
 export async function POST(request: NextRequest) {
   try {
@@ -145,15 +102,58 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Execute the tool
-    const toolExecution = await mockMCPClient.executeTool(serverId, toolName, toolArguments)
+    // Set up real-time feedback callbacks
+    const updates: ToolExecutionUpdate[] = []
+    
+    const progressCallback = (progress: any) => {
+      const update: ToolExecutionUpdate = {
+        type: 'progress',
+        toolCallId: toolCall.id,
+        sessionId: body.sessionId,
+        progress,
+        timestamp: new Date(),
+      }
+      updates.push(update)
+      
+      // Store for potential real-time retrieval
+      executionUpdates.set(toolCall.id, updates)
+    }
+    
+    const statusCallback = (status: any) => {
+      const update: ToolExecutionUpdate = {
+        type: 'status',
+        toolCallId: toolCall.id,
+        sessionId: body.sessionId,
+        status,
+        timestamp: new Date(),
+      }
+      updates.push(update)
+      
+      // Store for potential real-time retrieval
+      executionUpdates.set(toolCall.id, updates)
+    }
+
+    // Execute the tool with real-time feedback
+    const toolExecution = await toolExecutionManager.executeToolWithFeedback(
+      toolCall,
+      body.sessionId,
+      serverConfig,
+      progressCallback,
+      statusCallback
+    )
     
     if (toolExecution.error) {
       return NextResponse.json({
         result: '',
         error: toolExecution.error,
         executionTime: toolExecution.executionTime,
-        messageId: uuidv4()
+        messageId: uuidv4(),
+        status: {
+          stage: 'failed',
+          message: toolExecution.error,
+          timestamp: new Date(),
+        },
+        historyEntry: toolExecution.historyEntry,
       } as RunToolResponse)
     }
     
@@ -169,8 +169,17 @@ export async function POST(request: NextRequest) {
       reply: continuation.content,
       executionTime: toolExecution.executionTime,
       messageId: uuidv4(),
-      usage: continuation.usage
+      usage: continuation.usage,
+      status: {
+        stage: 'completed',
+        message: 'Tool execution completed successfully',
+        timestamp: new Date(),
+      },
+      historyEntry: toolExecution.historyEntry,
     }
+    
+    // Clean up stored updates after successful completion
+    executionUpdates.delete(toolCall.id)
     
     return NextResponse.json(response)
     

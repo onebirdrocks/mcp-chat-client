@@ -31,3 +31,10 @@ export {
   type SessionStorage,
   type SessionManagerOptions,
 } from './SessionManager';
+
+export {
+  ToolExecutionManager,
+  toolExecutionManager,
+  type ToolExecutionManagerConfig,
+  type ToolExecutionContext,
+} from './ToolExecutionManager';
