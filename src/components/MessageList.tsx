@@ -13,6 +13,8 @@ export interface MessageListProps {
   onRegenerateMessage?: (messageId: string) => void;
   onDeleteMessage?: (messageId: string) => void;
   className?: string;
+  isMobile?: boolean;
+  isTouch?: boolean;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -24,6 +26,8 @@ const MessageList: React.FC<MessageListProps> = ({
   onRegenerateMessage,
   onDeleteMessage,
   className = '',
+  isMobile = false,
+  isTouch = false,
 }) => {
   const { t } = useTranslation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -111,17 +115,17 @@ const MessageList: React.FC<MessageListProps> = ({
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className={`flex-1 flex items-center justify-center p-8 ${className}`}>
+      <div className={`flex-1 flex items-center justify-center ${isMobile ? 'p-4' : 'p-8'} ${className}`}>
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4`}>
+            <svg className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-900 dark:text-white mb-2`}>
             {t('chat.sessionTitle')}
           </h3>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className={`text-gray-600 dark:text-gray-300 ${isMobile ? 'text-sm' : 'text-base'}`}>
             {t('chat.noMessages')}
           </p>
         </div>
@@ -137,13 +141,13 @@ const MessageList: React.FC<MessageListProps> = ({
         className="flex-1 overflow-y-auto scroll-smooth"
         style={{ scrollBehavior: 'smooth' }}
       >
-        <div className="max-w-4xl mx-auto px-2 sm:px-0">
+        <div className={`max-w-4xl mx-auto ${isMobile ? 'px-0' : 'px-2 sm:px-0'}`}>
           {messageGroups.map((group) => (
             <div key={group.date}>
               {/* Date header */}
               {messageGroups.length > 1 && (
                 <div className="sticky top-0 z-10 flex justify-center py-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                  <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300">
+                  <div className={`bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium text-gray-600 dark:text-gray-300 ${isMobile ? 'text-xs' : 'text-xs'}`}>
                     {formatDateHeader(group.date)}
                   </div>
                 </div>
@@ -157,6 +161,8 @@ const MessageList: React.FC<MessageListProps> = ({
                   onCopy={onCopyMessage}
                   onRegenerate={onRegenerateMessage}
                   onDelete={onDeleteMessage}
+                  isMobile={isMobile}
+                  isTouch={isTouch}
                 />
               ))}
             </div>
@@ -212,13 +218,18 @@ const MessageList: React.FC<MessageListProps> = ({
 
       {/* Scroll to bottom button */}
       {!isNearBottom && messages.length > 0 && (
-        <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20">
+        <div className={`absolute z-20 ${isMobile ? 'bottom-2 right-2' : 'bottom-3 right-3 sm:bottom-4 sm:right-4'}`}>
           <button
             onClick={handleScrollToBottom}
-            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 sm:p-3 shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className={`
+              bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg transition-colors duration-200 
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+              ${isMobile ? 'p-3' : 'p-2 sm:p-3'}
+              ${isTouch ? 'touch-manipulation min-w-[48px] min-h-[48px]' : ''}
+            `}
             aria-label="Scroll to bottom"
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4 sm:w-5 sm:h-5'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
           </button>

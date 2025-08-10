@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import LLMProviderConfig from './LLMProviderConfig'
 import MCPServerConfig from './MCPServerConfig'
 import PreferencesConfig from '../../app/components/PreferencesConfig'
+import AccessibilitySettings from './ui/AccessibilitySettings'
 
 interface SettingsPageProps {
   language: 'en' | 'zh'
@@ -11,7 +12,7 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ language, serverSettings }: SettingsPageProps) {
-  const [activeTab, setActiveTab] = useState<'llm' | 'mcp' | 'preferences' | 'security' | 'export'>('llm')
+  const [activeTab, setActiveTab] = useState<'llm' | 'mcp' | 'preferences' | 'accessibility' | 'security' | 'export'>('llm')
 
   // Localized text
   const text = language === 'zh' ? {
@@ -21,6 +22,7 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
     llmProviders: 'LLM 提供商',
     mcpServers: 'MCP 服务器',
     preferences: '偏好设置',
+    accessibility: '无障碍',
     security: '安全',
     dataExport: '数据导出',
     providerConfiguration: 'LLM 提供商配置',
@@ -40,6 +42,7 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
     llmProviders: 'LLM Providers',
     mcpServers: 'MCP Servers',
     preferences: 'Preferences',
+    accessibility: 'Accessibility',
     security: 'Security',
     dataExport: 'Data Export',
     providerConfiguration: 'LLM Provider Configuration',
@@ -163,6 +166,13 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
           </div>
         )
       
+      case 'accessibility':
+        return (
+          <div className="space-y-6">
+            <AccessibilitySettings />
+          </div>
+        )
+      
       case 'security':
         return (
           <div className="space-y-6">
@@ -220,6 +230,16 @@ export default function SettingsPage({ language, serverSettings }: SettingsPageP
               }`}
             >
               {text.preferences}
+            </button>
+            <button
+              onClick={() => setActiveTab('accessibility')}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'accessibility'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              {text.accessibility}
             </button>
             <button
               onClick={() => setActiveTab('security')}

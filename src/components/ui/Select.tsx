@@ -1,4 +1,5 @@
-import React, { forwardRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useAccessibilityContext } from './AccessibilityProvider';
 
 export interface SelectOption {
   value: string;
@@ -6,170 +7,230 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string;
-  error?: string;
-  helperText?: string;
+export interface SelectProps {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
-  loading?: boolean;
-  fullWidth?: boolean;
-  variant?: 'default' | 'filled';
+  disabled?: boolean;
+  className?: string;
+  'aria-describedby'?: string;
+  'aria-labelledby'?: string;
+  'aria-label'?: string;
 }
 
-const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  (
-    {
-      label,
-      error,
-      helperText,
-      options,
-      placeholder,
-      loading = false,
-      fullWidth = false,
-      variant = 'default',
-      className = '',
-      id,
-      disabled,
-      ...props
-    },
-    ref
-  ) => {
-    const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
+export const Select: React.FC<SelectProps> = ({
+  id,
+  value,
+  onChange,
+  options,
+  placeholder = 'Select an option',
+  disabled = false,
+  className = '',
+  'aria-describedby': ariaDescribedBy,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-label': ariaLabel,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const selectRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const { isReducedMotion, announceToScreenReader } = useAccessibilityContext();
 
-    const baseClasses = [
-      'block px-3 py-2 border rounded-md shadow-sm',
-      'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-      'transition-colors duration-200',
-      'disabled:opacity-50 disabled:cursor-not-allowed',
-      'appearance-none bg-no-repeat bg-right',
-      fullWidth ? 'w-full' : '',
-    ].join(' ');
+  const selectedOption = options.find(option => option.value === value);
 
-    const variantClasses = {
-      default: error
-        ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500'
-        : 'border-gray-300 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white',
-      filled: error
-        ? 'border-red-300 bg-red-50 text-red-900 focus:ring-red-500 focus:border-red-500'
-        : 'border-gray-300 bg-gray-50 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white',
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setFocusedIndex(-1);
+      }
     };
 
-    const selectElement = (
-      <div className="relative">
-        <select
-          ref={ref}
-          id={selectId}
-          className={`${baseClasses} ${variantClasses[variant]} ${
-            loading ? 'pr-10' : 'pr-8'
-          } ${className}`}
-          disabled={disabled || loading}
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={
-            error ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle keyboard navigation
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (disabled) return;
+
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (isOpen && focusedIndex >= 0) {
+          const option = options[focusedIndex];
+          if (!option.disabled) {
+            onChange(option.value);
+            announceToScreenReader(`Selected ${option.label}`, 'polite');
+            setIsOpen(false);
+            setFocusedIndex(-1);
           }
-          {...props}
-        >
-          {placeholder && (
-            <option value="" disabled>
-              {placeholder}
-            </option>
-          )}
-          {options.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled}
-            >
-              {option.label}
-            </option>
-          ))}
-        </select>
-        
-        {/* Custom dropdown arrow */}
-        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          {loading ? (
-            <svg
-              className="animate-spin h-4 w-4 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="h-4 w-4 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          )}
-        </div>
-      </div>
-    );
-
-    if (!label && !error && !helperText) {
-      return selectElement;
+        } else {
+          setIsOpen(!isOpen);
+          if (!isOpen) {
+            const currentIndex = options.findIndex(opt => opt.value === value);
+            setFocusedIndex(currentIndex >= 0 ? currentIndex : 0);
+          }
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        setIsOpen(false);
+        setFocusedIndex(-1);
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          setFocusedIndex(0);
+        } else {
+          const nextIndex = Math.min(focusedIndex + 1, options.length - 1);
+          setFocusedIndex(nextIndex);
+          announceToScreenReader(options[nextIndex].label, 'polite');
+        }
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          setFocusedIndex(options.length - 1);
+        } else {
+          const prevIndex = Math.max(focusedIndex - 1, 0);
+          setFocusedIndex(prevIndex);
+          announceToScreenReader(options[prevIndex].label, 'polite');
+        }
+        break;
+      case 'Home':
+        if (isOpen) {
+          event.preventDefault();
+          setFocusedIndex(0);
+          announceToScreenReader(options[0].label, 'polite');
+        }
+        break;
+      case 'End':
+        if (isOpen) {
+          event.preventDefault();
+          setFocusedIndex(options.length - 1);
+          announceToScreenReader(options[options.length - 1].label, 'polite');
+        }
+        break;
     }
+  };
 
-    return (
-      <div className={fullWidth ? 'w-full' : ''}>
-        {label && (
-          <label
-            htmlFor={selectId}
-            className={`block text-sm font-medium mb-1 ${
-              error
-                ? 'text-red-700 dark:text-red-400'
-                : 'text-gray-700 dark:text-gray-300'
+  const handleOptionClick = (option: SelectOption) => {
+    if (!option.disabled) {
+      onChange(option.value);
+      announceToScreenReader(`Selected ${option.label}`, 'polite');
+      setIsOpen(false);
+      setFocusedIndex(-1);
+    }
+  };
+
+  // Scroll focused option into view
+  useEffect(() => {
+    if (isOpen && focusedIndex >= 0 && listRef.current) {
+      const focusedElement = listRef.current.children[focusedIndex] as HTMLElement;
+      if (focusedElement) {
+        focusedElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [focusedIndex, isOpen]);
+
+  return (
+    <div ref={selectRef} className={`relative ${className}`}>
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-describedby={ariaDescribedBy}
+        aria-labelledby={ariaLabelledBy}
+        aria-label={ariaLabel}
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
+        className={`
+          relative w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 
+          rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default 
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+          ${disabled 
+            ? 'bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' 
+            : 'hover:border-gray-400 dark:hover:border-gray-500'
+          }
+          ${isReducedMotion ? '' : 'transition-colors duration-150'}
+        `}
+      >
+        <span className="block truncate">
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+          <svg
+            className={`w-5 h-5 text-gray-400 transform ${isOpen ? 'rotate-180' : ''} ${
+              isReducedMotion ? '' : 'transition-transform duration-150'
             }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            {label}
-          </label>
-        )}
-        {selectElement}
-        {error && (
-          <p
-            id={`${selectId}-error`}
-            className="mt-1 text-sm text-red-600 dark:text-red-400"
-            role="alert"
-          >
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p
-            id={`${selectId}-helper`}
-            className="mt-1 text-sm text-gray-500 dark:text-gray-400"
-          >
-            {helperText}
-          </p>
-        )}
-      </div>
-    );
-  }
-);
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
 
-Select.displayName = 'Select';
+      {isOpen && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          aria-labelledby={id}
+          className={`
+            absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 
+            text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none
+            ${isReducedMotion ? '' : 'transition-opacity duration-150'}
+          `}
+        >
+          {options.map((option, index) => (
+            <li
+              key={option.value}
+              role="option"
+              aria-selected={option.value === value}
+              onClick={() => handleOptionClick(option)}
+              className={`
+                cursor-default select-none relative py-2 pl-3 pr-9
+                ${option.disabled 
+                  ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                  : 'text-gray-900 dark:text-white cursor-pointer'
+                }
+                ${index === focusedIndex 
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' 
+                  : option.disabled 
+                    ? '' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }
+                ${option.value === value ? 'font-semibold' : 'font-normal'}
+              `}
+            >
+              <span className="block truncate">{option.label}</span>
+              {option.value === value && (
+                <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600 dark:text-blue-400">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 export default Select;

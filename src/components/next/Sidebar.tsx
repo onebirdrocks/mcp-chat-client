@@ -13,12 +13,18 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   className?: string;
+  isMobile?: boolean;
+  isTablet?: boolean;
+  isTouch?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
   className = '',
+  isMobile = false,
+  isTablet = false,
+  isTouch = false,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -124,10 +130,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     handleDeleteSession(session);
   };
   
+  // Determine sidebar width based on screen size
+  const getSidebarWidth = () => {
+    if (isMobile) return 'w-72 sm:w-80'; // Slightly narrower on mobile
+    if (isTablet) return 'w-80';
+    return 'w-80 xl:w-96'; // Wider on large screens
+  };
+
   return (
     <>
-      {/* Mobile overlay */}
-      {isOpen && (
+      {/* Mobile/Tablet overlay */}
+      {isOpen && (isMobile || isTablet) && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
@@ -139,40 +152,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         ref={sidebarRef}
         className={`
-          fixed lg:static inset-y-0 left-0 z-50 lg:z-auto
-          w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
+          ${isMobile || isTablet ? 'fixed' : 'static'} inset-y-0 left-0 z-50 lg:z-auto
+          ${getSidebarWidth()} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
           transform transition-transform duration-300 ease-in-out lg:transform-none
-          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isOpen ? 'translate-x-0' : isMobile || isTablet ? '-translate-x-full' : 'translate-x-0'}
           flex flex-col h-full
+          ${isTouch ? 'touch-manipulation' : ''}
           ${className}
         `}
+        role="navigation"
         aria-label="Chat navigation"
+        aria-hidden={!isOpen && (isMobile || isTablet)}
+        data-mobile={isMobile}
+        data-tablet={isTablet}
+        data-touch={isTouch}
+        id="navigation"
       >
         {/* Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <header className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
             MCP Chat UI
           </h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-            onClick={onClose}
-            aria-label="Close sidebar"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
+          {(isMobile || isTablet) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2 touch-manipulation"
+              onClick={onClose}
+              aria-label="Close navigation sidebar"
+              title="Close sidebar (Escape)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </Button>
+          )}
+        </header>
         
         {/* New Chat Button */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
           <Button
             variant="primary"
-            size="md"
+            size={isMobile ? "sm" : "md"}
             fullWidth
             onClick={handleNewChat}
+            className={isTouch ? "touch-manipulation min-h-[44px]" : ""}
             leftIcon={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -184,13 +208,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         
         {/* Search */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
           <Input
+            id="search"
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className={isTouch ? "min-h-[44px] touch-manipulation" : ""}
+            aria-label="Search conversations"
+            role="searchbox"
             leftIcon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             }
@@ -199,18 +227,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         
         {/* Chat History */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-4">
-            <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+        <section className="flex-1 overflow-y-auto" aria-labelledby="chat-history-heading">
+          <div className="p-3 sm:p-4">
+            <h2 
+              id="chat-history-heading"
+              className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3"
+            >
               Recent Conversations
             </h2>
             
             {filteredSessions.length === 0 ? (
-              <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+              <div 
+                className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 sm:py-8"
+                role="status"
+                aria-live="polite"
+              >
                 {searchQuery ? 'No matching conversations found' : 'No conversations yet'}
               </div>
             ) : (
-              <div className="space-y-1">
+              <nav 
+                className={`space-y-1 ${isTouch ? 'space-y-2' : 'space-y-1'}`}
+                role="list"
+                aria-label="Chat sessions"
+              >
                 {filteredSessions.map((session) => (
                   <ChatSessionItem
                     key={session.id}
@@ -220,21 +259,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onRename={() => handleRenameSession(session)}
                     onDelete={() => handleDeleteSession(session)}
                     onArchive={() => handleArchiveSession(session)}
+                    isMobile={isMobile}
+                    isTouch={isTouch}
                   />
                 ))}
-              </div>
+              </nav>
             )}
           </div>
-        </div>
+        </section>
         
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div className="space-y-2">
             <Button
               variant="ghost"
               size="sm"
               fullWidth
               onClick={() => router.push('/settings')}
+              className={isTouch ? "touch-manipulation min-h-[44px]" : ""}
               leftIcon={
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -250,6 +292,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               size="sm"
               fullWidth
               onClick={() => router.push('/history')}
+              className={isTouch ? "touch-manipulation min-h-[44px]" : ""}
               leftIcon={
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -260,7 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Button>
           </div>
           
-          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+          <div className="mt-3 sm:mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
             Version 1.0.0
           </div>
         </div>

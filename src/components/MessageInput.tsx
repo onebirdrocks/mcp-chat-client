@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './ui';
-import { useEnhancedAccessibility } from '../hooks/useEnhancedAccessibility';
+import { useEnhancedAccessibility } from '../hooks/useAccessibility';
 
 export interface MessageInputProps {
   onSendMessage: (message: string) => void | Promise<void>;
@@ -10,6 +10,8 @@ export interface MessageInputProps {
   placeholder?: string;
   maxLength?: number;
   className?: string;
+  isMobile?: boolean;
+  isTouch?: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -19,6 +21,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   placeholder,
   maxLength = 4000,
   className = '',
+  isMobile = false,
+  isTouch = false,
 }) => {
   const { t } = useTranslation();
   const [message, setMessage] = useState('');
@@ -136,9 +140,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   return (
     <div className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky bottom-0 z-10 ${className}`}>
-      <div className="p-3 sm:p-4 lg:p-6">
+      <div className={`${isMobile ? 'p-3' : 'p-3 sm:p-4 lg:p-6'}`}>
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-end space-x-2 sm:space-x-3">
+          <div className={`flex items-end ${isMobile ? 'space-x-2' : 'space-x-2 sm:space-x-3'}`}>
             {/* Message input */}
             <div className="flex-1 relative">
               <textarea
@@ -156,17 +160,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 aria-invalid={characterCount >= maxLength ? 'true' : 'false'}
                 className={`
                   w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 
-                  bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white
+                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                   placeholder-gray-500 dark:placeholder-gray-400
                   focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20
                   disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed
                   transition-colors duration-200
+                  ${isMobile ? 'px-3 py-3 text-base' : 'px-4 py-3 text-sm'}
+                  ${isTouch ? 'touch-manipulation' : ''}
                   ${isNearLimit ? 'border-yellow-400 dark:border-yellow-500' : ''}
                   ${characterCount >= maxLength ? 'border-red-400 dark:border-red-500' : ''}
                 `}
                 style={{
-                  minHeight: '44px',
-                  maxHeight: '200px',
+                  minHeight: isTouch ? '48px' : '44px',
+                  maxHeight: isMobile ? '150px' : '200px',
                   lineHeight: '1.5',
                 }}
               />
@@ -187,7 +193,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
             <Button
               onClick={handleSendMessage}
               disabled={!canSend}
-              className="px-3 sm:px-4 py-3 h-11 flex-shrink-0 min-w-[60px] sm:min-w-[80px]"
+              className={`
+                flex-shrink-0 
+                ${isMobile ? 'px-3 py-3 min-w-[60px]' : 'px-3 sm:px-4 py-3 min-w-[60px] sm:min-w-[80px]'}
+                ${isTouch ? 'touch-manipulation min-h-[48px]' : 'h-11'}
+              `}
               aria-label={t('chat.sendMessage')}
               shortcut="Enter"
               tooltip={t('chat.sendMessageTooltip', 'Send message (Enter)')}

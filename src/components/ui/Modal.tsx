@@ -30,8 +30,8 @@ const Modal: React.FC<ModalProps> = ({
   const sizeClasses = {
     sm: 'max-w-sm sm:max-w-md',
     md: 'max-w-md sm:max-w-lg',
-    lg: 'max-w-lg sm:max-w-2xl',
-    xl: 'max-w-2xl sm:max-w-4xl',
+    lg: 'max-w-lg sm:max-w-2xl lg:max-w-3xl',
+    xl: 'max-w-2xl sm:max-w-4xl lg:max-w-5xl',
     full: 'max-w-full mx-2 sm:mx-4',
   };
 
@@ -127,18 +127,23 @@ const Modal: React.FC<ModalProps> = ({
       {/* Modal panel */}
       <div
         ref={modalRef}
-        className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto ${className}`}
+        className={`
+          relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full overflow-y-auto
+          ${sizeClasses[size]} 
+          ${size === 'full' ? 'max-h-[100vh] sm:max-h-[95vh]' : 'max-h-[95vh] sm:max-h-[90vh]'}
+          ${className}
+        `}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
       >
-        <div className="p-4 sm:p-6">
+        <div className="p-3 sm:p-4 lg:p-6">
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               {title && (
                 <h3
                   id="modal-title"
-                  className="text-lg font-medium text-gray-900 dark:text-white"
+                  className="text-base sm:text-lg font-medium text-gray-900 dark:text-white pr-2"
                 >
                   {title}
                 </h3>
@@ -146,12 +151,12 @@ const Modal: React.FC<ModalProps> = ({
               {showCloseButton && (
                 <button
                   type="button"
-                  className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 p-1 touch-manipulation"
                   onClick={onClose}
                   aria-label="Close modal"
                 >
                   <svg
-                    className="h-6 w-6"
+                    className="h-5 w-5 sm:h-6 sm:w-6"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"

@@ -12,6 +12,8 @@ interface ChatSessionItemProps {
   onRename: () => void;
   onDelete: () => void;
   onArchive: () => void;
+  isMobile?: boolean;
+  isTouch?: boolean;
 }
 
 export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
@@ -21,6 +23,8 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
   onRename,
   onDelete,
   onArchive,
+  isMobile = false,
+  isTouch = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -79,9 +83,10 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
       <button
         onClick={onClick}
         className={`
-          w-full text-left p-3 rounded-lg transition-colors duration-200
+          w-full text-left rounded-lg transition-colors duration-200
           hover:bg-gray-100 dark:hover:bg-gray-800
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          ${isTouch ? 'p-4 touch-manipulation' : 'p-3'}
           ${isActive 
             ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' 
             : 'border border-transparent'
@@ -95,7 +100,7 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
             <div className="flex items-center space-x-2 mb-1">
               {getProviderIcon(session.provider)}
               <h3 className={`
-                text-sm font-medium truncate
+                ${isMobile ? 'text-sm' : 'text-sm'} font-medium truncate
                 ${isActive 
                   ? 'text-blue-900 dark:text-blue-100' 
                   : 'text-gray-900 dark:text-white'
@@ -105,14 +110,16 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
               </h3>
             </div>
             
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div className={`flex items-center justify-between ${isMobile ? 'text-xs' : 'text-xs'} text-gray-500 dark:text-gray-400`}>
               <span>{session.messages?.length || 0} messages</span>
               <span>{formatDate(session.updatedAt)}</span>
             </div>
             
-            <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              {session.model}
-            </div>
+            {!isMobile && (
+              <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                {session.model}
+              </div>
+            )}
           </div>
           
           <div className="ml-2 flex-shrink-0">
@@ -120,10 +127,12 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleMenuToggle}
-              className="opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 p-1"
+              className={`
+                ${isTouch ? 'opacity-100 p-2 touch-manipulation' : 'opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 p-1'}
+              `}
               aria-label="Session options"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`${isTouch ? 'w-5 h-5' : 'w-4 h-4'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
               </svg>
             </Button>
@@ -135,13 +144,19 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
       {showMenu && (
         <div
           ref={menuRef}
-          className="absolute right-0 top-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10"
+          className={`
+            absolute right-0 top-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10
+            ${isMobile ? 'w-52' : 'w-48'}
+          `}
           role="menu"
         >
           <div className="py-1">
             <button
               onClick={() => handleMenuAction(onRename)}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+              className={`
+                w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center
+                ${isTouch ? 'px-4 py-3 touch-manipulation' : 'px-4 py-2'}
+              `}
               role="menuitem"
             >
               <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +167,10 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
             
             <button
               onClick={() => handleMenuAction(onArchive)}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+              className={`
+                w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center
+                ${isTouch ? 'px-4 py-3 touch-manipulation' : 'px-4 py-2'}
+              `}
               role="menuitem"
             >
               <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +183,10 @@ export const ChatSessionItem: React.FC<ChatSessionItemProps> = ({
             
             <button
               onClick={() => handleMenuAction(onDelete)}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
+              className={`
+                w-full text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center
+                ${isTouch ? 'px-4 py-3 touch-manipulation' : 'px-4 py-2'}
+              `}
               role="menuitem"
             >
               <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

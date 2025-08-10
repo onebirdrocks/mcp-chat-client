@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Badge, Alert, Spinner } from './ui';
-import { useModalAccessibility } from '../hooks/useEnhancedAccessibility';
+import { useAccessibility } from '../hooks/useAccessibility';
 import type { ToolCall } from '../types';
 
 export interface ToolConfirmationDialogProps {
@@ -35,7 +35,12 @@ const ToolConfirmationDialog: React.FC<ToolConfirmationDialogProps> = ({
   const { t } = useTranslation();
   const [isConfirming, setIsConfirming] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const { modalRef } = useModalAccessibility(isOpen);
+  const { focus, keyboard } = useAccessibility();
+  
+  // Use focus trap for modal
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  keyboard.useFocusTrap(modalRef, isOpen);
+  focus.useFocusReturn(isOpen);
 
   // Show result when execution completes
   useEffect(() => {

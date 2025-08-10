@@ -175,41 +175,67 @@
     "system": "System"
   },
   "accessibility": {
-    "title": "Accessibility",
-    "description": "Configure accessibility features to improve your experience",
-    "visual": "Visual Accessibility",
-    "motion": "Motion and Animation",
-    "interaction": "Interaction",
-    "systemInfo": "System Preferences",
-    "info": "Accessibility Information",
-    "highContrast": "High Contrast Mode",
-    "highContrastDescription": "Increase contrast for better visibility",
-    "highContrastSystemEnabled": "System high contrast is enabled",
-    "largeText": "Large Text",
-    "largeTextDescription": "Increase text size throughout the interface",
-    "focusVisible": "Enhanced Focus Indicators",
-    "focusVisibleDescription": "Show clear focus indicators for keyboard navigation",
-    "reducedMotion": "Reduce Motion",
-    "reducedMotionDescription": "Minimize animations and transitions",
-    "reducedMotionSystemEnabled": "System reduced motion is enabled",
-    "keyboardNavigation": "Enhanced Keyboard Navigation",
-    "keyboardNavigationDescription": "Improve keyboard navigation with arrow keys and shortcuts",
-    "screenReaderAnnouncements": "Screen Reader Announcements",
-    "screenReaderAnnouncementsDescription": "Announce important changes and updates to screen readers",
-    "systemHighContrast": "System High Contrast",
-    "systemReducedMotion": "System Reduced Motion",
-    "wcagCompliance": "WCAG 2.1 AA Compliance",
-    "wcagDescription": "This application follows Web Content Accessibility Guidelines (WCAG) 2.1 AA standards to ensure accessibility for all users.",
-    "keyboardSupport": "Full keyboard navigation support",
-    "screenReaderSupport": "Screen reader compatibility",
-    "colorContrastSupport": "Sufficient color contrast ratios",
-    "focusManagement": "Proper focus management",
+    "title": "Accessibility Settings",
+    "description": "Customize the interface to meet your accessibility needs.",
     "skipToMain": "Skip to main content",
-    "skipToNavigation": "Skip to navigation",
+    "skipToNav": "Skip to navigation",
+    "skipToSearch": "Skip to search",
     "skipToMessageInput": "Skip to message input",
-    "openInNewWindow": "Opens in new window",
+    "navigatedTo": "Navigated to {{location}}",
     "loading": "Loading",
-    "error": "Error",
-    "success": "Success"
+    "loadingComplete": "Loading complete",
+    "settingChanged": "{{setting}} setting changed to {{value}}",
+    "settingsReset": "Accessibility settings reset to defaults",
+    "systemDetected": "System preference detected",
+    "resetDefaults": "Reset to Defaults",
+    "testScreenReader": "Test Screen Reader",
+    "testAnnouncement": "This is a test announcement for screen readers",
+    "visual": {
+      "title": "Visual Settings"
+    },
+    "highContrast": {
+      "label": "High Contrast Mode",
+      "description": "Increases color contrast for better visibility"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "description": "Adjust text size throughout the interface",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "extraLarge": "Extra Large"
+    },
+    "focusVisible": {
+      "label": "Enhanced Focus Indicators",
+      "description": "Show prominent focus outlines for keyboard navigation"
+    },
+    "motion": {
+      "title": "Motion Settings"
+    },
+    "reducedMotion": {
+      "label": "Reduce Motion",
+      "description": "Minimize animations and transitions"
+    },
+    "navigation": {
+      "title": "Navigation Settings"
+    },
+    "keyboardNav": {
+      "label": "Enhanced Keyboard Navigation",
+      "description": "Enable advanced keyboard shortcuts and navigation"
+    },
+    "screenReader": {
+      "label": "Screen Reader Optimizations",
+      "description": "Optimize interface for screen reader users"
+    },
+    "actions": {
+      "title": "Actions"
+    },
+    "help": {
+      "title": "Accessibility Help",
+      "keyboard": "• Use Tab to navigate, Enter/Space to activate",
+      "escape": "• Press Escape to close dialogs and menus",
+      "arrows": "• Use arrow keys to navigate lists and menus",
+      "skipLinks": "• Use skip links to jump to main content"
+    }
   }
 }

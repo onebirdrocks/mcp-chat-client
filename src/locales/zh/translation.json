@@ -166,40 +166,67 @@
     "system": "跟随系统"
   },
   "accessibility": {
-    "title": "无障碍功能",
-    "description": "配置无障碍功能以改善您的使用体验",
-    "visual": "视觉无障碍",
-    "motion": "动画和过渡",
-    "interaction": "交互",
-    "systemInfo": "系统偏好设置",
-    "info": "无障碍信息",
-    "highContrast": "高对比度模式",
-    "highContrastDescription": "增加对比度以提高可见性",
-    "highContrastSystemEnabled": "系统高对比度已启用",
-    "largeText": "大字体",
-    "largeTextDescription": "增大界面中的文字大小",
-    "focusVisible": "增强焦点指示器",
-    "focusVisibleDescription": "为键盘导航显示清晰的焦点指示器",
-    "reducedMotion": "减少动画",
-    "reducedMotionDescription": "最小化动画和过渡效果",
-    "reducedMotionSystemEnabled": "系统减少动画已启用",
-    "keyboardNavigation": "增强键盘导航",
-    "keyboardNavigationDescription": "通过方向键和快捷键改善键盘导航",
-    "screenReaderAnnouncements": "屏幕阅读器播报",
-    "screenReaderAnnouncementsDescription": "向屏幕阅读器播报重要更改和更新",
-    "systemHighContrast": "系统高对比度",
-    "systemReducedMotion": "系统减少动画",
-    "wcagCompliance": "WCAG 2.1 AA 合规性",
-    "wcagDescription": "此应用程序遵循 Web 内容无障碍指南 (WCAG) 2.1 AA 标准，确保所有用户的无障碍访问。",
-    "keyboardSupport": "完整的键盘导航支持",
-    "screenReaderSupport": "屏幕阅读器兼容性",
-    "colorContrastSupport": "充足的颜色对比度",
-    "focusManagement": "适当的焦点管理",
+    "title": "无障碍设置",
+    "description": "自定义界面以满足您的无障碍需求。",
     "skipToMain": "跳转到主要内容",
-    "skipToNavigation": "跳转到导航",
-    "openInNewWindow": "在新窗口中打开",
+    "skipToNav": "跳转到导航",
+    "skipToSearch": "跳转到搜索",
+    "skipToMessageInput": "跳转到消息输入",
+    "navigatedTo": "已导航到 {{location}}",
     "loading": "加载中",
-    "error": "错误",
-    "success": "成功"
+    "loadingComplete": "加载完成",
+    "settingChanged": "{{setting}} 设置已更改为 {{value}}",
+    "settingsReset": "无障碍设置已重置为默认值",
+    "systemDetected": "检测到系统偏好设置",
+    "resetDefaults": "重置为默认值",
+    "testScreenReader": "测试屏幕阅读器",
+    "testAnnouncement": "这是屏幕阅读器的测试播报",
+    "visual": {
+      "title": "视觉设置"
+    },
+    "highContrast": {
+      "label": "高对比度模式",
+      "description": "增加颜色对比度以提高可见性"
+    },
+    "fontSize": {
+      "label": "字体大小",
+      "description": "调整整个界面的文字大小",
+      "small": "小",
+      "medium": "中",
+      "large": "大",
+      "extraLarge": "特大"
+    },
+    "focusVisible": {
+      "label": "增强焦点指示器",
+      "description": "为键盘导航显示突出的焦点轮廓"
+    },
+    "motion": {
+      "title": "动画设置"
+    },
+    "reducedMotion": {
+      "label": "减少动画",
+      "description": "最小化动画和过渡效果"
+    },
+    "navigation": {
+      "title": "导航设置"
+    },
+    "keyboardNav": {
+      "label": "增强键盘导航",
+      "description": "启用高级键盘快捷键和导航"
+    },
+    "screenReader": {
+      "label": "屏幕阅读器优化",
+      "description": "为屏幕阅读器用户优化界面"
+    },
+    "actions": {
+      "title": "操作"
+    },
+    "help": {
+      "title": "无障碍帮助",
+      "keyboard": "• 使用 Tab 键导航，Enter/空格键激活",
+      "escape": "• 按 Escape 键关闭对话框和菜单",
+      "arrows": "• 使用方向键导航列表和菜单",
+      "skipLinks": "• 使用跳转链接快速跳转到主要内容"
+    }
   }
 }

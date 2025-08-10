@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { detectTheme, detectLanguage, detectUserAgent } from '../lib/server-utils'
+import { AccessibilityProvider } from '../src/components/ui/AccessibilityProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -65,6 +66,28 @@ export default async function RootLayout({
                   const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                   const isDark = theme === 'dark' || (theme === 'system' && systemDark);
                   document.documentElement.classList.toggle('dark', isDark);
+                  
+                  // Initialize accessibility preferences
+                  const a11ySettings = localStorage.getItem('accessibility-settings');
+                  if (a11ySettings) {
+                    try {
+                      const settings = JSON.parse(a11ySettings);
+                      if (settings.highContrast) document.documentElement.classList.add('high-contrast');
+                      if (settings.reducedMotion) document.documentElement.classList.add('reduced-motion');
+                      if (settings.fontSize) document.documentElement.classList.add('font-' + settings.fontSize);
+                      if (settings.focusVisible) document.documentElement.classList.add('focus-visible-enabled');
+                      if (settings.screenReaderOptimized) document.documentElement.classList.add('screen-reader-optimized');
+                      if (settings.keyboardNavigation) document.documentElement.classList.add('keyboard-navigation-enhanced');
+                    } catch (e) {}
+                  }
+                  
+                  // Detect system preferences
+                  if (window.matchMedia('(prefers-contrast: high)').matches) {
+                    document.documentElement.classList.add('high-contrast');
+                  }
+                  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    document.documentElement.classList.add('reduced-motion');
+                  }
                 } catch (e) {}
               })();
             `,
@@ -72,28 +95,31 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
-        <div id="root" className="relative flex min-h-screen flex-col">
-          {children}
+        {/* Skip Links */}
+        <div className="skip-links">
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
+          <a href="#navigation" className="skip-link">
+            Skip to navigation
+          </a>
+          <a href="#search" className="skip-link">
+            Skip to search
+          </a>
         </div>
-        
-        {/* Initialize client-side features */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Initialize accessibility features
-              if (typeof window !== 'undefined') {
-                // Set up skip links
-                const skipLinks = document.createElement('div');
-                skipLinks.className = 'sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 z-50';
-                skipLinks.innerHTML = \`
-                  <a href="#main-content" class="bg-blue-600 text-white px-4 py-2 rounded-md">Skip to main content</a>
-                  <a href="#navigation" class="bg-blue-600 text-white px-4 py-2 rounded-md ml-2">Skip to navigation</a>
-                \`;
-                document.body.insertBefore(skipLinks, document.body.firstChild);
-              }
-            `,
-          }}
-        />
+
+        <AccessibilityProvider>
+          <div id="root" className="relative flex min-h-screen flex-col">
+            {/* Main Application */}
+            <main id="main-content" role="main" className="flex-1">
+              {children}
+            </main>
+          </div>
+        </AccessibilityProvider>
+
+        {/* Live regions for screen reader announcements */}
+        <div id="a11y-live-polite" aria-live="polite" aria-atomic="true" className="sr-only"></div>
+        <div id="a11y-live-assertive" aria-live="assertive" aria-atomic="true" className="sr-only"></div>
       </body>
     </html>
   )

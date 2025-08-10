@@ -11,6 +11,9 @@ export type { TextareaProps } from './Textarea';
 export { default as Select } from './Select';
 export type { SelectProps, SelectOption } from './Select';
 
+export { default as Switch } from './Switch';
+export type { SwitchProps } from './Switch';
+
 export { default as Modal } from './Modal';
 export type { ModalProps } from './Modal';
 
@@ -28,3 +31,16 @@ export type { AlertProps } from './Alert';
 
 export { default as Tooltip } from './Tooltip';
 export type { TooltipProps } from './Tooltip';
+
+// Responsive Components
+export { default as ResponsiveContainer } from './ResponsiveContainer';
+export type { ResponsiveContainerProps } from './ResponsiveContainer';
+
+export { default as ResponsiveGrid } from './ResponsiveGrid';
+export type { ResponsiveGridProps } from './ResponsiveGrid';
+
+// Accessibility Components
+export { default as AccessibilityProvider } from './AccessibilityProvider';
+export { useAccessibilityContext } from './AccessibilityProvider';
+
+export { default as AccessibilitySettings } from './AccessibilitySettings';
