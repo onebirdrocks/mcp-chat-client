@@ -67,7 +67,7 @@
     }
   ],
   "preferences": {
-    "theme": "light",
+    "theme": "dark",
     "language": "en",
     "autoScroll": true,
     "soundEnabled": false

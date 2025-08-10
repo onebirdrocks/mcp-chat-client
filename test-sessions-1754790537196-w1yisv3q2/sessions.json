@@ -1,0 +1,41 @@
+{
+  "sessions": {
+    "session_1754790537197_q4kxkblhc": {
+      "id": "session_1754790537197_q4kxkblhc",
+      "title": "New Chat",
+      "messages": [
+        {
+          "id": "msg-1",
+          "role": "user",
+          "content": "Hello",
+          "timestamp": "2025-08-10T01:48:57.197Z",
+          "metadata": {
+            "tokenCount": 5
+          }
+        },
+        {
+          "id": "msg-2",
+          "role": "assistant",
+          "content": "Hi there!",
+          "timestamp": "2025-08-10T01:48:57.197Z",
+          "metadata": {
+            "tokenCount": 10
+          }
+        }
+      ],
+      "createdAt": "2025-08-10T01:48:57.197Z",
+      "updatedAt": "2025-08-10T01:48:57.197Z",
+      "provider": "openai",
+      "model": "gpt-4",
+      "mcpServers": [],
+      "totalTokens": 15,
+      "estimatedCost": 0
+    }
+  },
+  "metadata": {
+    "lastCleanup": "2025-08-10T01:48:57.197Z",
+    "totalSessions": 1,
+    "version": "1.0.0",
+    "encrypted": false
+  }
+}
