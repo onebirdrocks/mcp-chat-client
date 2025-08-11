@@ -3,6 +3,7 @@
 import { ChevronUp, Plus, Lock, Mic, Send, ChevronDown, Globe, Sun, Moon, LogIn } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useTheme } from '@/hooks/useTheme';
 
 // Custom sidebar toggle icon component
 const SidebarToggleIcon = ({ isOpen }: { isOpen: boolean }) => (
@@ -29,19 +30,9 @@ export default function Home() {
   const [inputValue, setInputValue] = useState('');
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const [language, setLanguage] = useState('English');
   const userMenuRef = useRef<HTMLDivElement>(null);
-
-  // Initialize theme on component mount
-  useEffect(() => {
-    // Apply initial theme
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
+  const { isDarkMode, toggleTheme } = useTheme();
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -95,16 +86,6 @@ export default function Home() {
 
   const toggleUserMenu = () => {
     setUserMenuOpen(!userMenuOpen);
-  };
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    // Apply theme to document body
-    if (isDarkMode) {
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
   };
 
   const handleLanguageChange = () => {

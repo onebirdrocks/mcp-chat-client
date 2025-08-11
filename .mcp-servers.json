@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "blender": {
+      "command": "uvx",
+      "args": [
+        "blender-mcp"
+      ],
+      "env": {}
+    },
+    "ebook-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/onebird/github/ebook-mcp/src/ebook_mcp/",
+        "run",
+        "main.py"
+      ],
+      "env": {}
+    },
+    "youtube": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@kazuph/mcp-youtube"
+      ],
+      "env": {}
+    },
+    "Playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    }
+  }
+}

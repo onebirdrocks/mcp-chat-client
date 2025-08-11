@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, TestTube, Edit, Trash2, Eye, EyeOff, Check, X, Loader2, Wifi, Zap } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 
 interface LLMProvider {
   id: string;
@@ -123,7 +124,7 @@ const LLM_PROVIDERS = [
 ];
 
 export default function LLMPage() {
-  const [isDarkMode] = useState(true);
+  const { isDarkMode } = useTheme();
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState('');
@@ -506,11 +507,11 @@ export default function LLMPage() {
                       {provider.description}
                     </p>
                     {provider.lastTested && (
-                      <p className={`text-xs ${
-                        isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                      }`}>
-                        Last tested: {provider.lastTested.toLocaleDateString()}
-                      </p>
+                                          <p className={`text-xs ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      Last tested: {provider.lastTested.toLocaleDateString()}
+                    </p>
                     )}
                   </div>
                 </div>

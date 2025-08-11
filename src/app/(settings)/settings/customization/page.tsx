@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function CustomizationPage() {
   const [name, setName] = useState('');
@@ -9,7 +10,7 @@ export default function CustomizationPage() {
   const [traits, setTraits] = useState<string[]>([]);
   const [newTrait, setNewTrait] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
-  const [isDarkMode] = useState(true);
+  const { isDarkMode } = useTheme();
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [mainTextFont, setMainTextFont] = useState('Inter');
   const [codeFont, setCodeFont] = useState('JetBrains Mono');

@@ -1,21 +1,17 @@
 'use client';
 
 import { ArrowLeft, Sun, Moon, LogOut } from 'lucide-react';
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const { isDarkMode, toggleTheme } = useTheme();
   const pathname = usePathname();
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
 
   const settingsTabs = [
     { name: 'Account', path: '/settings/account' },
