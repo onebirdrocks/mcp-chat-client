@@ -2,6 +2,7 @@
 
 import { ChevronUp, Plus, Lock, Mic, Send, ChevronDown, Globe, Sun, Moon, LogIn } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 
 // Custom sidebar toggle icon component
 const SidebarToggleIcon = ({ isOpen }: { isOpen: boolean }) => (
@@ -227,11 +228,11 @@ export default function Home() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
-        <div className={`h-16 border-b flex items-center px-6 ${
+        <div className={`h-14 border-b flex items-center justify-between px-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         }`}>
           {/* Left side - Toggle button, Plus button (when sidebar closed), and Chat Model */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button 
               className={`p-2 rounded-lg transition-colors ${
                 isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
@@ -251,7 +252,7 @@ export default function Home() {
               </button>
             )}
             
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm ${
               isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
             }`}>
               <span className={`text-sm ${
@@ -261,6 +262,48 @@ export default function Home() {
                 isDarkMode ? 'text-gray-400' : 'text-gray-500'
               }`} />
             </div>
+          </div>
+
+          {/* Right side - Settings button */}
+          <div className="flex items-center gap-2">
+            <Link href="/settings">
+              <button className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+              }`}>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`w-4 h-4 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </Link>
+            <button 
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+              }`}
+            >
+              {isDarkMode ? (
+                <Sun className={`w-4 h-4 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`} />
+              ) : (
+                <Moon className={`w-4 h-4 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`} />
+              )}
+            </button>
           </div>
         </div>
 
@@ -301,7 +344,7 @@ export default function Home() {
             }`}>
               <p className={`text-sm ${
                 isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}>What's the weather forecast for New York this weekend?</p>
+              }`}>What&apos;s the weather forecast for New York this weekend?</p>
             </div>
             <div className={`border rounded-lg p-4 cursor-pointer transition-colors ${
               isDarkMode 
