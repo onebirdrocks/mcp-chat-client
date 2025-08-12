@@ -36,6 +36,12 @@ yarn-error.log*
 # LLM provider settings
 .disabled-providers.json
 
+# MCP servers configuration
+.mcp-servers.json
+
+# Custom models configuration
+.custom-models.json
+
 # vercel
 .vercel
 

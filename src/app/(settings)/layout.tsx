@@ -16,6 +16,7 @@ export default function SettingsLayout({
   const settingsTabs = [
     { name: 'Account', path: '/settings/account' },
     { name: 'LLM', path: '/settings/llm' },
+    { name: 'Models', path: '/settings/models' },
     { name: 'MCP', path: '/settings/mcp' },
     { name: 'Customization', path: '/settings/customization' },
     { name: 'History & Sync', path: '/settings/history' },

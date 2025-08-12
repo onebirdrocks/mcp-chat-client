@@ -1,0 +1,297 @@
+{
+  "openai": [
+    {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "description": "Latest GPT-4 model with improved performance"
+    },
+    {
+      "id": "gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "description": "Fast and efficient GPT-4 model"
+    },
+    {
+      "id": "gpt-4-turbo",
+      "name": "GPT-4 Turbo",
+      "description": "GPT-4 with improved performance"
+    },
+    {
+      "id": "gpt-3.5-turbo",
+      "name": "GPT-3.5 Turbo",
+      "description": "Fast and cost-effective model"
+    },
+    {
+      "id": "gpt-4",
+      "name": "GPT-4",
+      "description": "Original GPT-4 model"
+    },
+    {
+      "id": "gpt-4-32k",
+      "name": "GPT-4 32K",
+      "description": "GPT-4 with 32K context"
+    }
+  ],
+  "anthropic": [
+    {
+      "id": "claude-3-5-sonnet-20241022",
+      "name": "Claude 3.5 Sonnet",
+      "description": "Latest Claude model with enhanced capabilities"
+    },
+    {
+      "id": "claude-3-5-haiku-20241022",
+      "name": "Claude 3.5 Haiku",
+      "description": "Fast and efficient Claude model"
+    },
+    {
+      "id": "claude-3-opus-20240229",
+      "name": "Claude 3 Opus",
+      "description": "Most capable Claude model"
+    },
+    {
+      "id": "claude-3-sonnet-20240229",
+      "name": "Claude 3 Sonnet",
+      "description": "Balanced Claude model"
+    },
+    {
+      "id": "claude-3-haiku-20240307",
+      "name": "Claude 3 Haiku",
+      "description": "Fast Claude model"
+    }
+  ],
+  "google": [
+    {
+      "id": "gemini-1.5-pro",
+      "name": "Gemini 1.5 Pro",
+      "description": "Latest Gemini Pro model with enhanced capabilities"
+    },
+    {
+      "id": "gemini-1.5-flash",
+      "name": "Gemini 1.5 Flash",
+      "description": "Fast Gemini model"
+    },
+    {
+      "id": "gemini-pro",
+      "name": "Gemini Pro",
+      "description": "Original Gemini Pro"
+    },
+    {
+      "id": "gemini-pro-vision",
+      "name": "Gemini Pro Vision",
+      "description": "Gemini with vision capabilities"
+    }
+  ],
+  "mistral": [
+    {
+      "id": "mistral-large-latest",
+      "name": "Mistral Large",
+      "description": "Most capable Mistral model"
+    },
+    {
+      "id": "mistral-medium-latest",
+      "name": "Mistral Medium",
+      "description": "Balanced Mistral model"
+    },
+    {
+      "id": "mistral-small-latest",
+      "name": "Mistral Small",
+      "description": "Fast Mistral model"
+    }
+  ],
+  "cohere": [
+    {
+      "id": "command",
+      "name": "Command",
+      "description": "Main Cohere model"
+    },
+    {
+      "id": "command-light",
+      "name": "Command Light",
+      "description": "Fast Cohere model"
+    },
+    {
+      "id": "command-nightly",
+      "name": "Command Nightly",
+      "description": "Experimental Cohere model"
+    }
+  ],
+  "perplexity": [
+    {
+      "id": "llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B",
+      "description": "Llama 3.1 8B model"
+    },
+    {
+      "id": "llama-3.1-70b-instruct",
+      "name": "Llama 3.1 70B",
+      "description": "Llama 3.1 70B model"
+    },
+    {
+      "id": "mixtral-8x7b-instruct",
+      "name": "Mixtral 8x7B",
+      "description": "Mixtral 8x7B model"
+    }
+  ],
+  "fireworks": [
+    {
+      "id": "accounts/fireworks/models/llama-v2-7b-chat",
+      "name": "Llama v2 7B Chat",
+      "description": "Llama v2 7B model"
+    },
+    {
+      "id": "accounts/fireworks/models/llama-v2-13b-chat",
+      "name": "Llama v2 13B Chat",
+      "description": "Llama v2 13B model"
+    },
+    {
+      "id": "accounts/fireworks/models/llama-v2-70b-chat",
+      "name": "Llama v2 70B Chat",
+      "description": "Llama v2 70B model"
+    }
+  ],
+  "groq": [
+    {
+      "id": "llama3-8b-8192",
+      "name": "Llama3 8B",
+      "description": "Llama3 8B model"
+    },
+    {
+      "id": "llama3-70b-8192",
+      "name": "Llama3 70B",
+      "description": "Llama3 70B model"
+    },
+    {
+      "id": "mixtral-8x7b-32768",
+      "name": "Mixtral 8x7B",
+      "description": "Mixtral 8x7B model"
+    },
+    {
+      "id": "gemma-7b-it",
+      "name": "Gemma 7B",
+      "description": "Gemma 7B model"
+    }
+  ],
+  "deepseek": [
+    {
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "description": "Main DeepSeek model"
+    },
+    {
+      "id": "deepseek-coder",
+      "name": "DeepSeek Coder",
+      "description": "Code-focused DeepSeek model"
+    }
+  ],
+  "openrouter": [
+    {
+      "id": "openai/gpt-4o",
+      "name": "OpenAI GPT-4o",
+      "description": "GPT-4o via OpenRouter"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "OpenAI GPT-4o Mini",
+      "description": "GPT-4o Mini via OpenRouter"
+    },
+    {
+      "id": "anthropic/claude-3-5-sonnet",
+      "name": "Claude 3.5 Sonnet",
+      "description": "Claude 3.5 Sonnet via OpenRouter"
+    },
+    {
+      "id": "google/gemini-1.5-pro",
+      "name": "Gemini 1.5 Pro",
+      "description": "Gemini 1.5 Pro via OpenRouter"
+    }
+  ],
+  "huggingface": [
+    {
+      "id": "meta-llama/Llama-2-7b-chat-hf",
+      "name": "Llama 2 7B Chat",
+      "description": "Llama 2 7B Chat model"
+    },
+    {
+      "id": "meta-llama/Llama-2-13b-chat-hf",
+      "name": "Llama 2 13B Chat",
+      "description": "Llama 2 13B Chat model"
+    },
+    {
+      "id": "microsoft/DialoGPT-medium",
+      "name": "DialoGPT Medium",
+      "description": "DialoGPT Medium model"
+    }
+  ],
+  "ollama": [
+    {
+      "id": "llama2",
+      "name": "Llama 2",
+      "description": "Llama 2 model"
+    },
+    {
+      "id": "llama2:13b",
+      "name": "Llama 2 13B",
+      "description": "Llama 2 13B model"
+    },
+    {
+      "id": "llama2:70b",
+      "name": "Llama 2 70B",
+      "description": "Llama 2 70B model"
+    },
+    {
+      "id": "codellama",
+      "name": "Code Llama",
+      "description": "Code Llama model"
+    }
+  ],
+  "together": [
+    {
+      "id": "togethercomputer/llama-2-7b-chat",
+      "name": "Llama 2 7B Chat",
+      "description": "Llama 2 7B Chat model"
+    },
+    {
+      "id": "togethercomputer/llama-2-13b-chat",
+      "name": "Llama 2 13B Chat",
+      "description": "Llama 2 13B Chat model"
+    },
+    {
+      "id": "togethercomputer/llama-2-70b-chat",
+      "name": "Llama 2 70B Chat",
+      "description": "Llama 2 70B Chat model"
+    }
+  ],
+  "zhipu": [
+    {
+      "id": "glm-4",
+      "name": "GLM-4",
+      "description": "GLM-4 model"
+    },
+    {
+      "id": "glm-4v",
+      "name": "GLM-4V",
+      "description": "GLM-4V vision model"
+    },
+    {
+      "id": "glm-3-turbo",
+      "name": "GLM-3 Turbo",
+      "description": "GLM-3 Turbo model"
+    }
+  ],
+  "moonshot": [
+    {
+      "id": "moonshot-v1-8k",
+      "name": "Moonshot v1 8K",
+      "description": "Moonshot v1 8K model"
+    },
+    {
+      "id": "moonshot-v1-32k",
+      "name": "Moonshot v1 32K",
+      "description": "Moonshot v1 32K model"
+    },
+    {
+      "id": "moonshot-v1-128k",
+      "name": "Moonshot v1 128K",
+      "description": "Moonshot v1 128K model"
+    }
+  ]
+}
