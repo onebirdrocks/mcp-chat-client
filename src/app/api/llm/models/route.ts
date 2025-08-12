@@ -42,6 +42,16 @@ interface CustomModel {
   isEnabled: boolean;
   createdAt: string;
   source: 'preset' | 'api' | 'custom';
+  capabilities?: {
+    isInferenceModel?: boolean;
+    supportsMultimodal?: boolean;
+    supportsTools?: boolean;
+    supportsFunctionCalling?: boolean;
+    maxTokens?: number;
+    contextLength?: number;
+    visionCapabilities?: string[];
+    toolTypes?: string[];
+  };
 }
 
 interface ModelGroup {
@@ -108,18 +118,28 @@ export async function GET(request: NextRequest) {
       const presetModels = PRESET_MODELS[providerId as keyof typeof PRESET_MODELS] || [];
       const providerCustomModels = customModels.filter(m => m.providerId === providerId);
       
-      // Combine and deduplicate models
-      const allModels: CustomModel[] = [
-        ...presetModels.map(model => ({
-          ...model,
-          providerId,
-          isCustom: false,
-          isEnabled: true,
-          createdAt: new Date().toISOString(),
-          source: 'preset' as const
-        })),
-        ...providerCustomModels
-      ];
+              // Combine and deduplicate models
+        const allModels: CustomModel[] = [
+          ...presetModels.map(model => ({
+            ...model,
+            providerId,
+            isCustom: false,
+            isEnabled: true,
+            createdAt: new Date().toISOString(),
+            source: 'preset' as const,
+            capabilities: model.capabilities || {
+              isInferenceModel: true,
+              supportsMultimodal: false,
+              supportsTools: false,
+              supportsFunctionCalling: false,
+              maxTokens: 4096,
+              contextLength: 8192,
+              visionCapabilities: [],
+              toolTypes: []
+            }
+          })),
+          ...providerCustomModels
+        ];
       
       // Remove duplicates (custom models take precedence)
       const uniqueModels = allModels.filter((model, index, self) => 
@@ -154,7 +174,17 @@ export async function GET(request: NextRequest) {
             isCustom: false,
             isEnabled: true,
             createdAt: new Date().toISOString(),
-            source: 'preset' as const
+            source: 'preset' as const,
+            capabilities: model.capabilities || {
+              isInferenceModel: true,
+              supportsMultimodal: false,
+              supportsTools: false,
+              supportsFunctionCalling: false,
+              maxTokens: 4096,
+              contextLength: 8192,
+              visionCapabilities: [],
+              toolTypes: []
+            }
           })),
           ...providerCustomModels
         ];

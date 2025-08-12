@@ -12,12 +12,22 @@ export interface ModelData {
   name: string;
   description: string;
   providerId: string;
+  capabilities?: {
+    isInferenceModel?: boolean;      // 是否为推理模型
+    supportsMultimodal?: boolean;    // 是否支持多模态
+    supportsTools?: boolean;         // 是否支持工具调用
+    supportsFunctionCalling?: boolean; // 是否支持函数调用
+    maxTokens?: number;              // 最大token数
+    contextLength?: number;          // 上下文长度
+    visionCapabilities?: string[];   // 视觉能力（如：image, video, audio）
+    toolTypes?: string[];            // 支持的工具类型
+  };
 }
 
 // Read preset models from configuration file
 const OOBT_MODELS_FILE_PATH = join(process.cwd(), 'oobt-models.json');
 
-function readPresetModels(): Record<string, Array<{ id: string; name: string; description: string }>> {
+function readPresetModels(): Record<string, Array<{ id: string; name: string; description: string; capabilities?: ModelData['capabilities'] }>> {
   if (!existsSync(OOBT_MODELS_FILE_PATH)) {
     console.warn('oobt-models.json not found, using empty preset models');
     return {};

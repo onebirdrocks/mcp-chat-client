@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, TestTube, Edit, Trash2, Eye, EyeOff, Loader2, Zap, AlertTriangle, Info, Settings } from 'lucide-react';
+import { Plus, TestTube, Edit, Trash2, Eye, EyeOff, Loader2, Zap, AlertTriangle, Info, Settings, Eye as EyeIcon, Code, Palette, Video, Image } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import ValidationMessage from '@/components/ui/ValidationMessage';
 import DefaultModelSelector from '@/components/ui/DefaultModelSelector';
@@ -16,6 +16,16 @@ interface Model {
   isEnabled: boolean;
   createdAt?: string;
   source: 'preset' | 'api' | 'custom';
+  capabilities?: {
+    isInferenceModel?: boolean;
+    supportsMultimodal?: boolean;
+    supportsTools?: boolean;
+    supportsFunctionCalling?: boolean;
+    maxTokens?: number;
+    contextLength?: number;
+    visionCapabilities?: string[];
+    toolTypes?: string[];
+  };
 }
 
 interface ModelGroup {
@@ -55,6 +65,104 @@ const PROVIDER_ICONS: Record<string, string> = {
   together: '🤝',
   zhipu: '🇨🇳',
   moonshot: '🚀',
+};
+
+// Component to display model capabilities
+const ModelCapabilities = ({ model }: { model: Model }) => {
+  const { isDarkMode } = useTheme();
+  const capabilities = model.capabilities;
+
+  if (!capabilities) {
+    return (
+      <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        No capability information available
+      </div>
+    );
+  }
+
+  const formatNumber = (num?: number) => {
+    if (!num) return 'Unknown';
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Basic Capabilities */}
+      <div className="flex flex-wrap gap-1">
+        {capabilities.isInferenceModel && (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+            isDarkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
+          }`}>
+            <Zap className="w-3 h-3" />
+            Inference
+          </span>
+        )}
+        
+        {capabilities.supportsMultimodal && (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+            isDarkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700'
+          }`}>
+            <Palette className="w-3 h-3" />
+            Multimodal
+          </span>
+        )}
+        
+        {capabilities.supportsTools && (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+            isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
+          }`}>
+            <Code className="w-3 h-3" />
+            Tools
+          </span>
+        )}
+        
+        {capabilities.supportsFunctionCalling && (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+            isDarkMode ? 'bg-orange-900/30 text-orange-300' : 'bg-orange-100 text-orange-700'
+          }`}>
+            <Code className="w-3 h-3" />
+            Functions
+          </span>
+        )}
+      </div>
+
+      {/* Vision Capabilities */}
+      {capabilities.visionCapabilities && capabilities.visionCapabilities.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {capabilities.visionCapabilities.map(cap => (
+            <span key={cap} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+              isDarkMode ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+            }`}>
+              {cap === 'image' && <Image className="w-3 h-3" />}
+              {cap === 'video' && <Video className="w-3 h-3" />}
+              {cap.charAt(0).toUpperCase() + cap.slice(1)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Technical Specs */}
+      <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        <div className="flex gap-4">
+          {capabilities.maxTokens && (
+            <span>Max: {formatNumber(capabilities.maxTokens)} tokens</span>
+          )}
+          {capabilities.contextLength && (
+            <span>Context: {formatNumber(capabilities.contextLength)} tokens</span>
+          )}
+        </div>
+      </div>
+
+      {/* Tool Types */}
+      {capabilities.toolTypes && capabilities.toolTypes.length > 0 && (
+        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <span>Tools: {capabilities.toolTypes.join(', ')}</span>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function ModelsPage() {
@@ -497,6 +605,11 @@ export default function ModelsPage() {
                           Added: {new Date(model.createdAt).toLocaleDateString()}
                         </p>
                       )}
+                      
+                      {/* Model Capabilities */}
+                      <div className="mt-3">
+                        <ModelCapabilities model={model} />
+                      </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
