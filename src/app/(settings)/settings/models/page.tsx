@@ -304,7 +304,7 @@ export default function ModelsPage() {
           </div>
           <div className="mt-4">
             <Link
-              href="/settings/llm"
+              href="/settings/llms"
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 isDarkMode 
                   ? 'bg-yellow-600 text-white hover:bg-yellow-700' 
