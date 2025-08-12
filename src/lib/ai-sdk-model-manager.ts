@@ -145,7 +145,7 @@ export class AISDKModelManager {
   }
 
   // Test model with AI SDK
-  async testModel(providerId: string, modelId: string, testPrompt: string = 'Hello, how are you?'): Promise<ModelTestResult> {
+  async testModel(providerId: string, modelId: string, testPrompt: string = 'Who are you? Can you introduce yourself?'): Promise<ModelTestResult> {
     const startTime = Date.now();
     
     try {
@@ -181,7 +181,7 @@ export class AISDKModelManager {
       const capabilities: ModelInfo['capabilities'] = {};
 
       // Test basic text generation
-      const basicTest = await this.testModel(providerId, modelId, 'Say hello');
+      const basicTest = await this.testModel(providerId, modelId, 'Who are you? Can you introduce yourself?');
       if (basicTest.success) {
         capabilities.supportsFunctionCalling = false; // Will be updated if function calling is tested
       }

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const result = await aiSDKModelManager.testModel(
       providerId, 
       modelId, 
-      testPrompt || 'Hello, how are you?'
+      testPrompt || 'Who are you? Can you introduce yourself?'
     );
 
     return NextResponse.json({
