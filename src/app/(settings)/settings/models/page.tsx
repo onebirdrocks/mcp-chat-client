@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, TestTube, Edit, Trash2, Eye, EyeOff, Loader2, Zap, AlertTriangle, Info, Settings } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import ValidationMessage from '@/components/ui/ValidationMessage';
+import DefaultModelSelector from '@/components/ui/DefaultModelSelector';
 import Link from 'next/link';
 
 interface Model {
@@ -278,6 +279,11 @@ export default function ModelsPage() {
             Add Custom Model
           </button>
         </div>
+      </div>
+
+      {/* Default Model Selector */}
+      <div className="mb-6">
+        <DefaultModelSelector modelGroups={modelGroups} />
       </div>
 
       {/* No Providers Configured Warning */}

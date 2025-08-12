@@ -42,6 +42,9 @@ yarn-error.log*
 # Custom models configuration
 .custom-models.json
 
+# Default model configuration
+.default-model.json
+
 # vercel
 .vercel
 
