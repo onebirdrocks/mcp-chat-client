@@ -85,7 +85,7 @@ export default function NewChatPage() {
 
     setCreating(true);
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chats', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

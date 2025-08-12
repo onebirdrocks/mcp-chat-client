@@ -26,7 +26,7 @@ export default function ChatsPage() {
 
   const loadChats = async () => {
     try {
-      const response = await fetch('/api/chat');
+      const response = await fetch('/api/chats');
       if (response.ok) {
         const data = await response.json();
         setChats(data.chats || []);
@@ -56,7 +56,7 @@ export default function ChatsPage() {
 
   const deleteChat = async (chatId: string) => {
     try {
-      const response = await fetch(`/api/chat/${chatId}`, {
+      const response = await fetch(`/api/chats/${chatId}`, {
         method: 'DELETE'
       });
       

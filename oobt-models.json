@@ -559,6 +559,26 @@
   ],
   "deepseek": [
     {
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek Reasoner",
+      "description": "Reasoning-focused DeepSeek model with step-by-step thinking",
+      "capabilities": {
+        "isInferenceModel": true,
+        "supportsMultimodal": false,
+        "supportsTools": false,
+        "supportsFunctionCalling": false,
+        "maxTokens": 4096,
+        "contextLength": 32768,
+        "visionCapabilities": [],
+        "toolTypes": [],
+        "reasoningCapabilities": [
+          "step_by_step_thinking",
+          "explicit_reasoning",
+          "structured_analysis"
+        ]
+      }
+    },
+    {
       "id": "deepseek-chat",
       "name": "DeepSeek Chat",
       "description": "Main DeepSeek model",

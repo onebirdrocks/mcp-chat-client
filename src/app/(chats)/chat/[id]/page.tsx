@@ -38,7 +38,7 @@ export default function ChatPage() {
 
   const loadChat = async () => {
     try {
-      const response = await fetch(`/api/chat/${chatId}`);
+      const response = await fetch(`/api/chats/${chatId}`);
       if (response.ok) {
         const data = await response.json();
         setChat(data);
@@ -72,7 +72,7 @@ export default function ChatPage() {
     setSending(true);
 
     try {
-      const response = await fetch(`/api/chat/${chatId}`, {
+      const response = await fetch(`/api/chats/${chatId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

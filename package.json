@@ -22,12 +22,18 @@
     "@hookform/resolvers": "^5.2.1",
     "@monaco-editor/react": "^4.7.0",
     "@openrouter/ai-sdk-provider": "^1.1.2",
+    "@types/uuid": "^10.0.0",
     "ai": "^5.0.9",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^15.6.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

@@ -50,6 +50,9 @@ yarn-error.log*
 # Chat sessions
 .chats.json
 
+# Database
+.conversation_history.sqlite
+
 # vercel
 .vercel
 
