@@ -47,6 +47,9 @@ yarn-error.log*
 # Default model configuration
 .default-model.json
 
+# Chat sessions
+.chats.json
+
 # vercel
 .vercel
 

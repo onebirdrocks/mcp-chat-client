@@ -223,7 +223,7 @@ export default function Home() {
               <SidebarToggleIcon isOpen={sidebarOpen} />
             </button>
             
-            {!sidebarOpen && (
+            <Link href="/chat/new">
               <button className={`p-2 rounded-lg transition-colors ${
                 isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
               }`}>
@@ -231,7 +231,7 @@ export default function Home() {
                   isDarkMode ? 'text-white' : 'text-gray-600'
                 }`} />
               </button>
-            )}
+            </Link>
             
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm ${
               isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
@@ -296,6 +296,20 @@ export default function Home() {
             }`}>
               Hello there! How can I help you today?
             </h2>
+          </div>
+          
+          {/* New Chat Button */}
+          <div className="mb-8">
+            <Link href="/chat/new">
+              <button className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
+                isDarkMode 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}>
+                <Plus className="w-5 h-5" />
+                新建聊天
+              </button>
+            </Link>
           </div>
           
           {/* Suggested Prompts Grid */}
