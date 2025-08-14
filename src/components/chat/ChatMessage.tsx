@@ -5,15 +5,39 @@ import { User, Bot, Copy, Check } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import MarkdownRenderer from './MarkdownRenderer';
 import ReasoningSteps from './ReasoningSteps';
+import ToolCallStatus from './ToolCallStatus';
+import InlineToolCallConfirmation from './InlineToolCallConfirmation';
+import { ToolCall, ToolCallResult } from '@/lib/tool-call-client';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
   reasoningSteps?: string[];
+  toolCalls?: ToolCall[];
+  toolResults?: ToolCallResult[];
+  toolStatus?: 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
+  onRetryTools?: () => void;
+  onConfirmToolCalls?: (toolCalls: ToolCall[]) => void;
+  onCancelToolCalls?: () => void;
+  onExecuteSingleTool?: (toolCall: ToolCall) => void;
+  isWaitingForLLM?: boolean;
 }
 
-export default function ChatMessage({ role, content, timestamp, reasoningSteps }: ChatMessageProps) {
+export default function ChatMessage({ 
+  role, 
+  content, 
+  timestamp, 
+  reasoningSteps, 
+  toolCalls, 
+  toolResults, 
+  toolStatus, 
+  onRetryTools,
+  onConfirmToolCalls,
+  onCancelToolCalls,
+  onExecuteSingleTool,
+  isWaitingForLLM
+}: ChatMessageProps) {
   const { isDarkMode } = useTheme();
   const isUser = role === 'user';
   const [copied, setCopied] = useState(false);
@@ -57,7 +81,7 @@ export default function ChatMessage({ role, content, timestamp, reasoningSteps }
         </div>
       )}
       
-      <div className={`max-w-[85%] rounded-xl p-4 ${
+      <div className={`max-w-[95%] rounded-xl p-4 ${
         isUser
           ? isDarkMode 
             ? 'bg-blue-600 text-white' 
@@ -70,6 +94,27 @@ export default function ChatMessage({ role, content, timestamp, reasoningSteps }
           <MarkdownRenderer content={content} />
           {!isUser && reasoningSteps && reasoningSteps.length > 0 && (
             <ReasoningSteps steps={reasoningSteps} />
+          )}
+          {!isUser && toolCalls && toolCalls.length > 0 && (
+            <>
+              {toolStatus === 'pending' && onConfirmToolCalls && onCancelToolCalls ? (
+                <InlineToolCallConfirmation
+                  toolCalls={toolCalls}
+                  toolResults={toolResults}
+                  onConfirm={onConfirmToolCalls}
+                  onCancel={onCancelToolCalls}
+                  onExecuteSingle={onExecuteSingleTool}
+                  isWaitingForLLM={isWaitingForLLM}
+                />
+              ) : (
+                <ToolCallStatus
+                  toolCalls={toolCalls}
+                  toolResults={toolResults}
+                  toolStatus={toolStatus}
+                  onRetry={onRetryTools}
+                />
+              )}
+            </>
           )}
         </div>
         

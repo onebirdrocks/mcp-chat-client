@@ -200,10 +200,11 @@ class MCPServerManager {
     const tools: MCPTool[] = [];
     for (const server of this.servers.values()) {
       if (server.enabled && server.tools) {
-        // Add server prefix to tool names
+        // Add server prefix to tool names and include serverName
         const prefixedTools = server.tools.map(tool => ({
           ...tool,
           name: `${server.name}:${tool.name}`,
+          serverName: server.name, // 直接包含服务器名称
           description: `[${server.name}] ${tool.description}`
         }));
         tools.push(...prefixedTools);

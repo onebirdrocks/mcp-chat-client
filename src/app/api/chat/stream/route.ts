@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 获取历史消息
+    const historyMessages = await databaseManager.getMessages(chatId);
+    
     const model = aiSDKModelManager.getModel(providerId, modelId);
     if (!model) {
       return NextResponse.json(
@@ -38,12 +41,28 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Starting stream with model:', modelId, 'provider:', providerId);
+    console.log('History messages count:', historyMessages.length);
     
-    // 构建完整的prompt，包含system prompt
-    let fullPrompt = message;
+    // 构建完整的prompt，包含历史消息和system prompt
+    let fullPrompt = '';
+    
+    // 添加system prompt
     if (conversation.systemPrompt) {
-      fullPrompt = `${conversation.systemPrompt}\n\nUser: ${message}`;
+      fullPrompt += `${conversation.systemPrompt}\n\n`;
     }
+    
+    // 添加历史消息（排除当前用户消息，因为它还没有保存到数据库）
+    for (const msg of historyMessages) {
+      if (msg.role === 'user') {
+        fullPrompt += `User: ${msg.content}\n`;
+      } else if (msg.role === 'assistant') {
+        fullPrompt += `Assistant: ${msg.content}\n`;
+      }
+    }
+    
+    // 添加当前用户消息
+    fullPrompt += `User: ${message}\n`;
+    fullPrompt += `Assistant:`;
     
     // 如果请求显示推理过程，在prompt中添加指令
     if (showReasoning) {

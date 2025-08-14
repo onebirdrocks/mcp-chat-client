@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import CreateChatModal from '@/components/chat/CreateChatModal';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ConversationHistory from '@/components/chat/ConversationHistory';
+import { toolCallClientService, ToolCall, ToolCallResult } from '@/lib/tool-call-client';
 
 // Custom sidebar toggle icon component
 const SidebarToggleIcon = ({ isOpen }: { isOpen: boolean }) => (
@@ -57,9 +58,14 @@ export default function Home() {
     content: string;
     timestamp: Date;
     reasoningSteps?: string[];
+    toolCalls?: ToolCall[];
+    toolResults?: ToolCallResult[];
+    toolStatus?: 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
   }>>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [currentPrompt, setCurrentPrompt] = useState('');
+  const [isWaitingForLLM, setIsWaitingForLLM] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -130,6 +136,8 @@ export default function Home() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const prompt = inputValue.trim();
+    setCurrentPrompt(prompt);
     setInputValue('');
     setIsMultiLine(false);
     setIsStreaming(true);
@@ -158,6 +166,46 @@ export default function Home() {
 
       const saveData = await saveResponse.json();
       const assistantMessageId = saveData.assistantMessage.id;
+
+      // 检查模型是否支持工具调用
+      const supportsTools = await toolCallClientService.checkModelSupportsTools(
+        currentChat.providerId,
+        currentChat.modelId
+      );
+
+      if (supportsTools) {
+        // 启用所有MCP服务器工具
+        await toolCallClientService.enableAllMCPServerTools();
+        
+        // 获取可用工具
+        const tools = await toolCallClientService.getAllAvailableTools();
+        
+        // 使用工具调用API
+        const toolResponse = await toolCallClientService.callModelWithTools(
+          currentChat.providerId,
+          currentChat.modelId,
+          userMessage.content,
+          tools,
+          messages // 传递历史消息
+        );
+        
+        if (toolResponse.toolCalls && toolResponse.toolCalls.length > 0) {
+          // 添加包含工具调用的AI消息
+          const assistantMessage = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant' as const,
+            content: toolResponse.text,
+            timestamp: new Date(),
+            reasoningSteps: [],
+            toolCalls: toolResponse.toolCalls,
+            toolStatus: 'pending' as const,
+          };
+          
+          setMessages(prev => [...prev, assistantMessage]);
+          setIsStreaming(false);
+          return;
+        }
+      }
 
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
@@ -255,6 +303,7 @@ export default function Home() {
       ]);
     } finally {
       setIsStreaming(false);
+      setIsWaitingForLLM(false);
     }
   };
 
@@ -318,6 +367,267 @@ export default function Home() {
 
   const handleCreateChat = () => {
     setCreateChatModalOpen(true);
+  };
+
+  // 处理工具调用确认
+  const handleToolCallConfirm = async (messageId: string, confirmedTools: ToolCall[]) => {
+    // 检查是否已经有工具执行结果
+    const message = messages.find(m => m.id === messageId);
+    const hasExistingResults = message?.toolResults && message.toolResults.length > 0;
+    
+    if (hasExistingResults) {
+      // 如果已经有工具执行结果，直接使用现有结果调用LLM
+      console.log('Using existing tool results for LLM call');
+      
+      // 更新消息状态为处理中
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { ...m, toolStatus: 'executing' as const }
+          : m
+      ));
+      
+      // 设置等待LLM状态
+      console.log('🔄 设置 isWaitingForLLM = true');
+      setIsWaitingForLLM(true);
+      
+      try {
+        // 创建AI回复消息占位符
+        const aiResponseMessageId = (Date.now() + 1).toString();
+        const aiResponseMessage = {
+          id: aiResponseMessageId,
+          role: 'assistant' as const,
+          content: '',
+          timestamp: new Date(),
+        };
+        
+        // 添加AI回复消息占位符
+        setMessages(prev => [...prev, aiResponseMessage]);
+        
+        // 继续对话，使用现有的工具结果（流式）
+        const response = await toolCallClientService.continueConversationWithToolResultsStream(
+          currentChat!.providerId,
+          currentChat!.modelId,
+          currentPrompt,
+          message!.toolResults!,
+          messages, // 传递历史消息
+          (chunk) => {
+            // 实时更新AI回复内容
+            setMessages(prev => prev.map(m => 
+              m.id === aiResponseMessageId 
+                ? { ...m, content: m.content + chunk }
+                : m
+            ));
+          }
+        );
+        
+        // 更新工具调用消息的状态
+        setMessages(prev => prev.map(m => 
+          m.id === messageId 
+            ? { 
+                ...m, 
+                toolStatus: message!.toolResults!.some(r => !r.success) ? 'failed' as const : 'completed' as const
+              }
+            : m
+        ));
+      } catch (error) {
+        console.error('Error calling LLM with existing tool results:', error);
+        
+        // 更新消息的状态为失败
+        setMessages(prev => prev.map(m => 
+          m.id === messageId 
+            ? { ...m, toolStatus: 'failed' as const }
+            : m
+        ));
+      } finally {
+        setIsStreaming(false);
+        console.log('🔄 设置 isWaitingForLLM = false');
+        setIsWaitingForLLM(false);
+      }
+    } else {
+      // 如果没有工具执行结果，执行工具调用（传统流程）
+      console.log('Executing tools for the first time');
+      
+      // 更新消息的状态为执行中
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { ...m, toolStatus: 'executing' as const }
+          : m
+      ));
+      
+      try {
+        // 执行工具调用
+        const results = await toolCallClientService.executeToolCalls(confirmedTools);
+        
+        // 继续对话
+        const response = await toolCallClientService.continueConversationWithToolResults(
+          currentChat!.providerId,
+          currentChat!.modelId,
+          currentPrompt,
+          results,
+          messages // 传递历史消息
+        );
+        
+        // 更新工具调用消息的状态和结果
+        setMessages(prev => prev.map(m => 
+          m.id === messageId 
+            ? { 
+                ...m, 
+                toolResults: results,
+                toolStatus: results.some(r => !r.success) ? 'failed' as const : 'completed' as const
+              }
+            : m
+        ));
+        
+        // 添加AI的回复作为新消息
+        if (response && response.trim()) {
+          const aiResponseMessage = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant' as const,
+            content: response,
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, aiResponseMessage]);
+        }
+      } catch (error) {
+        console.error('Error handling tool calls:', error);
+        
+        // 更新消息的状态为失败
+        setMessages(prev => prev.map(m => 
+          m.id === messageId 
+            ? { ...m, toolStatus: 'failed' as const }
+            : m
+        ));
+      } finally {
+        setIsStreaming(false);
+        setIsWaitingForLLM(false);
+      }
+    }
+  };
+
+  // 处理单个工具执行
+  const handleExecuteSingleTool = async (messageId: string, toolCall: ToolCall) => {
+    try {
+      // 执行单个工具调用
+      const results = await toolCallClientService.executeToolCalls([toolCall]);
+      
+      // 更新消息的工具结果
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { 
+              ...m, 
+              toolResults: [...(m.toolResults || []), ...results]
+            }
+          : m
+      ));
+      
+      console.log(`Tool ${toolCall.name} executed successfully`);
+    } catch (error) {
+      console.error(`Error executing tool ${toolCall.name}:`, error);
+      
+      // 更新消息的工具结果（包含错误）
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { 
+              ...m, 
+              toolResults: [...(m.toolResults || []), {
+                toolCallId: toolCall.id,
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              }]
+            }
+          : m
+      ));
+    }
+  };
+
+  // 处理工具调用取消
+  const handleToolCallCancel = (messageId: string) => {
+    setIsStreaming(false);
+    
+    // 更新消息的状态为已取消
+    setMessages(prev => prev.map(m => 
+      m.id === messageId 
+        ? { 
+            ...m, 
+            toolStatus: 'cancelled' as const,
+            content: 'Tool execution was cancelled by the user.'
+          }
+        : m
+    ));
+  };
+
+  // 重试工具调用
+  const handleRetryTools = async (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (!message || !message.toolCalls) return;
+
+    // 更新消息状态为执行中
+    setMessages(prev => prev.map(m => 
+      m.id === messageId 
+        ? { ...m, toolStatus: 'executing' as const }
+        : m
+    ));
+
+    // 设置等待LLM状态
+    setIsWaitingForLLM(true);
+
+    try {
+      // 重新执行工具调用
+      const results = await toolCallClientService.executeToolCalls(message.toolCalls);
+      
+      // 创建AI回复消息占位符
+      const aiResponseMessageId = (Date.now() + 1).toString();
+      const aiResponseMessage = {
+        id: aiResponseMessageId,
+        role: 'assistant' as const,
+        content: '',
+        timestamp: new Date(),
+      };
+      
+      // 添加AI回复消息占位符
+      setMessages(prev => [...prev, aiResponseMessage]);
+      
+      // 继续对话（流式）
+      const response = await toolCallClientService.continueConversationWithToolResultsStream(
+        currentChat!.providerId,
+        currentChat!.modelId,
+        currentPrompt,
+        results,
+        messages, // 传递历史消息
+        (chunk) => {
+          // 实时更新AI回复内容
+          setMessages(prev => prev.map(m => 
+            m.id === aiResponseMessageId 
+              ? { ...m, content: m.content + chunk }
+              : m
+          ));
+        }
+      );
+      
+      // 更新工具调用消息的状态和结果
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { 
+              ...m, 
+              toolResults: results,
+              toolStatus: results.some(r => !r.success) ? 'failed' as const : 'completed' as const
+            }
+          : m
+      ));
+    } catch (error) {
+      console.error('Error retrying tools:', error);
+      
+      // 更新消息状态为失败
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { ...m, toolStatus: 'failed' as const }
+          : m
+      ));
+    } finally {
+      setIsStreaming(false);
+      setIsWaitingForLLM(false);
+    }
   };
 
   const scrollToBottom = () => {
@@ -672,16 +982,29 @@ export default function Home() {
                     </p>
                   </div>
                 ) : (
-                  <div className="max-w-6xl mx-auto">
-                    {messages.map((message) => (
-                      <ChatMessage
-                        key={message.id}
-                        role={message.role}
-                        content={message.content}
-                        timestamp={message.timestamp}
-                        reasoningSteps={message.reasoningSteps}
-                      />
-                    ))}
+                  <div className="max-w-7xl mx-auto">
+                    {messages.map((message) => {
+                      if (message.toolCalls) {
+                        console.log(`🔍 page.tsx: 传递 isWaitingForLLM = ${isWaitingForLLM} 给消息 ${message.id}`);
+                      }
+                      return (
+                        <ChatMessage
+                          key={message.id}
+                          role={message.role}
+                          content={message.content}
+                          timestamp={message.timestamp}
+                          reasoningSteps={message.reasoningSteps}
+                          toolCalls={message.toolCalls}
+                          toolResults={message.toolResults}
+                          toolStatus={message.toolStatus}
+                          onRetryTools={() => handleRetryTools(message.id)}
+                          onConfirmToolCalls={(toolCalls) => handleToolCallConfirm(message.id, toolCalls)}
+                          onCancelToolCalls={() => handleToolCallCancel(message.id)}
+                          onExecuteSingleTool={(toolCall) => handleExecuteSingleTool(message.id, toolCall)}
+                          isWaitingForLLM={isWaitingForLLM}
+                        />
+                      );
+                    })}
                     <div ref={messagesEndRef} />
                   </div>
                 )}
@@ -708,7 +1031,7 @@ export default function Home() {
         {/* Input Area */}
         {chatState === 'idle' ? (
           <div className="p-6 flex-shrink-0">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-7xl mx-auto">
               <div className={`flex gap-4 rounded-xl p-5 border ${isMultiLine ? 'items-end' : 'items-center'} ${
                 isDarkMode 
                   ? 'bg-gray-800 border-gray-600' 
@@ -742,7 +1065,17 @@ export default function Home() {
                     <div className="h-10 flex-shrink-0"></div>
                   )}
                 </div>
-                <button className={`p-2.5 rounded-lg transition-colors ${isMultiLine ? 'self-end' : 'self-center'} bg-blue-600 hover:bg-blue-700`}>
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputValue.trim() || isStreaming}
+                  className={`p-2.5 rounded-lg transition-colors ${isMultiLine ? 'self-end' : 'self-center'} ${
+                    inputValue.trim() && !isStreaming
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : isDarkMode
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
                   <svg
                     width="20"
                     height="20"
@@ -758,12 +1091,30 @@ export default function Home() {
                   </svg>
                 </button>
               </div>
+              <div className="flex items-center justify-between mt-3">
+                <p className={`text-xs ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  {isStreaming ? 'AI is responding... Press Enter to send, Ctrl+Enter for new line' : 'Press Enter to send, Ctrl+Enter for new line'}
+                </p>
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={showReasoning}
+                    onChange={(e) => setShowReasoning(e.target.checked)}
+                    className="w-3 h-3"
+                  />
+                  <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                    Show reasoning
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
         ) : (
           /* Chat Input */
           <div className="p-6 flex-shrink-0">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-7xl mx-auto">
               <div className={`flex gap-4 rounded-xl p-5 border ${isMultiLine ? 'items-end' : 'items-center'} ${
                 isDarkMode 
                   ? 'bg-gray-800 border-gray-600' 

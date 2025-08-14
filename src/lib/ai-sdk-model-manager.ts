@@ -9,8 +9,16 @@ import { groq } from '@ai-sdk/groq';
 import { deepseek } from '@ai-sdk/deepseek';
 import { openrouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+
+// 动态导入服务器端模块
+let readFileSync: any, existsSync: any, join: any;
+if (typeof window === 'undefined') {
+  const fs = require('fs');
+  const path = require('path');
+  readFileSync = fs.readFileSync;
+  existsSync = fs.existsSync;
+  join = path.join;
+}
 
 export interface ModelInfo {
   id: string;
@@ -38,10 +46,15 @@ export interface ModelTestResult {
 }
 
 // Read preset models from configuration file
-const OOBT_MODELS_FILE_PATH = join(process.cwd(), 'oobt-models.json');
-
 function readPresetModels(): Record<string, Array<{ id: string; name: string; description: string }>> {
-  if (!existsSync(OOBT_MODELS_FILE_PATH)) {
+  // 在客户端环境中返回空对象
+  if (typeof window !== 'undefined') {
+    return {};
+  }
+  
+  const OOBT_MODELS_FILE_PATH = join(process.cwd(), 'oobt-models.json');
+  
+  if (!existsSync || !existsSync(OOBT_MODELS_FILE_PATH)) {
     console.warn('oobt-models.json not found, using empty preset models');
     return {};
   }
@@ -60,7 +73,7 @@ function generateAISDKModels() {
   const presetModels = readPresetModels();
   const aiSdkModels: Record<string, Record<string, any>> = {};
   
-  // AI SDK provider functions mapping (only include available providers)
+  // AI SDK provider functions mapping
   const providers = {
     openai,
     anthropic,

@@ -12,13 +12,24 @@ export class AISDKMCPIntegration {
   // Refresh enabled tools list
   async refreshEnabledTools(): Promise<void> {
     try {
-      const response = await fetch('/api/mcp');
+      // 直接从工具 API 获取所有启用的工具
+      const response = await fetch('/api/mcp/tools');
       const data = await response.json();
-      if (data.servers) {
-        this.servers = data.servers;
-        this.enabledTools = this.servers
-          .filter(s => s.enabled && s.tools)
-          .flatMap(s => s.tools || []);
+      if (data.tools) {
+        // 将 AI SDK 格式的工具转换回 MCPTool 格式
+        this.enabledTools = data.tools.map((tool: { function: { name: string; description: string; parameters: any } }) => ({
+          name: tool.function.name,
+          description: tool.function.description,
+          inputSchema: tool.function.parameters
+        }));
+        console.log(`Refreshed ${this.enabledTools.length} tools from MCP servers`);
+      }
+      
+      // 同时获取服务器信息用于状态显示
+      const serversResponse = await fetch('/api/mcp');
+      const serversData = await serversResponse.json();
+      if (serversData.servers) {
+        this.servers = serversData.servers;
       }
     } catch (error) {
       console.error('Failed to refresh enabled tools:', error);
@@ -27,7 +38,14 @@ export class AISDKMCPIntegration {
   }
 
   // Convert MCP tools to AI SDK format
-  convertToolsToAISDKFormat(): Record<string, unknown>[] {
+  convertToolsToAISDKFormat(): Array<{
+    type: 'function';
+    function: {
+      name: string;
+      description: string;
+      parameters: any;
+    };
+  }> {
     return this.enabledTools.map(tool => ({
       type: 'function' as const,
       function: {

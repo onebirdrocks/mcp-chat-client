@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Send, Settings, MessageSquare } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import Link from 'next/link';
+import ChatMessage from '@/components/chat/ChatMessage';
 
 interface Message {
   id: string;
@@ -178,36 +179,15 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-4">
+        <div className="max-w-4xl mx-auto">
           <div className="space-y-6">
             {chat.messages.map((msg) => (
-              <div
+              <ChatMessage
                 key={msg.id}
-                className={`flex gap-4 ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`max-w-3xl rounded-lg p-4 ${
-                    msg.role === 'user'
-                      ? isDarkMode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-600 text-white'
-                      : isDarkMode
-                        ? 'bg-gray-700 text-white'
-                        : 'bg-white text-gray-900 border border-gray-200'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                  <p className={`text-xs mt-2 ${
-                    msg.role === 'user'
-                      ? 'text-blue-100'
-                      : isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
+                role={msg.role}
+                content={msg.content}
+                timestamp={new Date(msg.timestamp)}
+              />
             ))}
             
             {sending && (
