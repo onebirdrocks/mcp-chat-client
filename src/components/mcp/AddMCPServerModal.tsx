@@ -11,7 +11,15 @@ const addServerSchema = z.object({
   description: z.string().optional(),
   command: z.string().min(1, 'Command is required'),
   args: z.string().optional(),
-  env: z.string().optional(),
+  env: z.string().optional().refine((val) => {
+    if (!val) return true;
+    try {
+      JSON.parse(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Must be valid JSON'),
 });
 
 type AddServerFormData = z.infer<typeof addServerSchema>;
@@ -36,10 +44,11 @@ export default function AddMCPServerModal({ onClose, onSubmit }: AddMCPServerMod
   const handleFormSubmit = async (data: AddServerFormData) => {
     setIsSubmitting(true);
     try {
-      onSubmit(data);
+      await onSubmit(data);
       reset();
     } catch (error) {
       console.error('Failed to add server:', error);
+      // 错误已经在父组件中处理，这里不需要额外处理
     } finally {
       setIsSubmitting(false);
     }

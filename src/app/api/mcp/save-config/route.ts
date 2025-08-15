@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mcpManager } from '@/lib/mcp-manager';
+import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,13 +32,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Save the configuration
-    await mcpManager.saveConfigFromJson(parsedConfig);
+    await serverMCPServerManager.saveConfigFromJson(parsedConfig);
     
-    // Reload the configuration
-    await mcpManager.loadFromStorage();
-    
-    // Reconnect enabled servers
-    await mcpManager.connectEnabledServers();
+    // Note: Configuration is automatically reloaded in saveConfigFromJson
 
     return NextResponse.json({
       success: true,

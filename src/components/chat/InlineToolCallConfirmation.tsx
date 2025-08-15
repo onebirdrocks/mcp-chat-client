@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Check, X, Play, AlertTriangle, ChevronDown, ChevronUp, Clock, Zap, SkipForward } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
-import { ToolCall, ToolCallResult } from '@/lib/tool-call-client';
+import { ToolCall, ToolCallResult } from '@/lib/tool-call-client-simplified';
 
 interface InlineToolCallConfirmationProps {
   toolCalls: ToolCall[];
@@ -298,7 +298,7 @@ export default function InlineToolCallConfirmation({
           
           return (
             <div
-              key={tool.id}
+              key={tool.id || `tool-${index}`}
               className={`rounded-lg border transition-all duration-200 ${
                 isExecuting
                   ? isDarkMode
@@ -378,27 +378,6 @@ export default function InlineToolCallConfirmation({
                         }`}>
                           {tool.name}
                         </span>
-                        {tool.serverName && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                            tool.serverName === 'ebook-mcp'
-                              ? isDarkMode 
-                                ? 'bg-purple-600/20 text-purple-400 border border-purple-600/30' 
-                                : 'bg-purple-100 text-purple-700 border border-purple-200'
-                              : tool.serverName === 'system'
-                              ? isDarkMode 
-                                ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
-                                : 'bg-blue-100 text-blue-700 border border-blue-200'
-                              : tool.serverName === 'filesystem'
-                              ? isDarkMode 
-                                ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
-                                : 'bg-green-100 text-green-700 border border-green-200'
-                              : isDarkMode 
-                                ? 'bg-gray-600/20 text-gray-400 border border-gray-600/30' 
-                                : 'bg-gray-200 text-gray-600 border border-gray-300'
-                          }`}>
-                            {tool.serverName}
-                          </span>
-                        )}
                       </div>
                       <div className={`text-xs ${
                         isDarkMode ? 'text-gray-400' : 'text-gray-600'

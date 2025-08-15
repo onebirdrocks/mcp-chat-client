@@ -1,37 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mcpManager } from '@/lib/mcp-manager';
+import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: serverId } = await params;
-    const health = await mcpManager.checkServerHealth(serverId);
-    const server = mcpManager.getServer(serverId);
-    
-    if (!server) {
-      return NextResponse.json({
-        success: false,
-        error: 'Server not found'
-      }, { status: 404 });
+    const { id } = params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing server ID' },
+        { status: 400 }
+      );
     }
-    
-    // Update server with health information
-    server.status = health.status;
-    if (health.tools) {
-      server.tools = health.tools;
-    }
-    
+
+    const result = await serverMCPServerManager.checkServerHealth(id);
+
     return NextResponse.json({
       success: true,
-      server: server
+      ...result
     });
+
   } catch (error) {
-    console.error('Health check failed:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.error('Error checking MCP server health:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }

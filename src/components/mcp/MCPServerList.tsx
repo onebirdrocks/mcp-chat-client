@@ -31,11 +31,11 @@ export default function MCPServerList({
 
   const handleAddServer = (serverData: Record<string, unknown>) => {
     onAddServer({
-      name: serverData.name,
-      description: serverData.description,
-      command: serverData.command,
-      args: serverData.args ? serverData.args.split(' ').filter(Boolean) : [],
-      env: serverData.env ? JSON.parse(serverData.env) : {},
+      name: String(serverData.name),
+      description: String(serverData.description),
+      command: String(serverData.command),
+      args: serverData.args ? String(serverData.args).split(' ').filter(Boolean) : [],
+      env: serverData.env ? JSON.parse(String(serverData.env)) : {},
     });
     setShowAddModal(false);
   };
@@ -44,11 +44,11 @@ export default function MCPServerList({
     if (editingServer) {
       onEditServer({
         ...editingServer,
-        name: serverData.name,
-        description: serverData.description,
-        command: serverData.command,
-        args: serverData.args ? serverData.args.split(' ').filter(Boolean) : [],
-        env: serverData.env ? JSON.parse(serverData.env) : {},
+        name: String(serverData.name),
+        description: String(serverData.description),
+        command: String(serverData.command),
+        args: serverData.args ? String(serverData.args).split(' ').filter(Boolean) : [],
+        env: serverData.env ? JSON.parse(String(serverData.env)) : {},
       });
     }
     setEditingServer(null);

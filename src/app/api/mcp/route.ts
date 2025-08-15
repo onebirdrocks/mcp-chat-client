@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mcpManager } from '@/lib/mcp-manager';
+import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 import { MCPServer } from '@/types/mcp';
 
 export async function GET() {
   try {
-    const servers = mcpManager.getAllServers();
+    const servers = serverMCPServerManager.getAllServers();
     return NextResponse.json({ servers });
   } catch (error) {
     console.error('Failed to get MCP servers:', error);
@@ -28,21 +28,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 解析环境变量
+    let parsedEnv = {};
+    if (env) {
+      try {
+        if (typeof env === 'string') {
+          parsedEnv = JSON.parse(env);
+        } else if (typeof env === 'object') {
+          parsedEnv = env;
+        }
+      } catch (parseError) {
+        return NextResponse.json(
+          { error: 'Invalid environment variables format. Must be valid JSON.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // 添加服务器
-    const id = mcpManager.addServer({
+    const id = await serverMCPServerManager.addServer({
       name,
       description,
       command,
       args: args ? (typeof args === 'string' ? args.split(' ').filter(Boolean) : args) : [],
-      env: env ? JSON.parse(env) : {},
+      env: parsedEnv,
     });
 
-    const newServer = mcpManager.getServer(id);
+    const newServer = serverMCPServerManager.getServer(id);
     return NextResponse.json({ server: newServer }, { status: 201 });
   } catch (error) {
     console.error('Failed to add MCP server:', error);
     return NextResponse.json(
-      { error: 'Failed to add MCP server' },
+      { error: error instanceof Error ? error.message : 'Failed to add MCP server' },
       { status: 500 }
     );
   }
@@ -60,7 +77,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const existingServer = mcpManager.getServer(id);
+    const existingServer = serverMCPServerManager.getServer(id);
     if (!existingServer) {
       return NextResponse.json(
         { error: 'Server not found' },
@@ -68,20 +85,37 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // 解析环境变量
+    let parsedEnv = existingServer.env;
+    if (serverData.env) {
+      try {
+        if (typeof serverData.env === 'string') {
+          parsedEnv = JSON.parse(serverData.env);
+        } else if (typeof serverData.env === 'object') {
+          parsedEnv = serverData.env;
+        }
+      } catch (parseError) {
+        return NextResponse.json(
+          { error: 'Invalid environment variables format. Must be valid JSON.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // 更新服务器
     const updatedServer: MCPServer = {
       ...existingServer,
       ...serverData,
       args: serverData.args ? (typeof serverData.args === 'string' ? serverData.args.split(' ').filter(Boolean) : serverData.args) : existingServer.args,
-      env: serverData.env ? (typeof serverData.env === 'string' ? JSON.parse(serverData.env) : serverData.env) : existingServer.env,
+      env: parsedEnv,
     };
 
-    mcpManager.updateServer(updatedServer);
+    await serverMCPServerManager.updateServer(updatedServer);
     return NextResponse.json({ server: updatedServer });
   } catch (error) {
     console.error('Failed to update MCP server:', error);
     return NextResponse.json(
-      { error: 'Failed to update MCP server' },
+      { error: error instanceof Error ? error.message : 'Failed to update MCP server' },
       { status: 500 }
     );
   }
@@ -99,7 +133,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const server = mcpManager.getServer(id);
+    const server = serverMCPServerManager.getServer(id);
     if (!server) {
       return NextResponse.json(
         { error: 'Server not found' },
@@ -107,7 +141,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    mcpManager.deleteServer(id);
+    await serverMCPServerManager.deleteServer(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Failed to delete MCP server:', error);

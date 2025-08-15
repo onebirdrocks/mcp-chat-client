@@ -7,7 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import CreateChatModal from '@/components/chat/CreateChatModal';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ConversationHistory from '@/components/chat/ConversationHistory';
-import { toolCallClientService, ToolCall, ToolCallResult } from '@/lib/tool-call-client';
+import { simplifiedToolCallClient as toolCallClientService, ToolCall, ToolCallResult } from '@/lib/tool-call-client-simplified';
 
 // Custom sidebar toggle icon component
 const SidebarToggleIcon = ({ isOpen }: { isOpen: boolean }) => (

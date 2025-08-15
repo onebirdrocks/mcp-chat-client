@@ -1,191 +1,140 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createMCPClient } from '@/lib/server/mcp-client';
+import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { toolCalls } = await request.json();
+    const body = await request.json();
+    console.log(`🔧 收到工具调用请求:`, JSON.stringify(body, null, 2));
     
+    const { toolCalls } = body;
+    
+    if (!Array.isArray(toolCalls)) {
+      console.log(`🔧 工具调用格式错误，期望数组，得到:`, typeof toolCalls);
+      return NextResponse.json(
+        { error: 'toolCalls must be an array' },
+        { status: 400 }
+      );
+    }
+    
+    console.log(`🔧 工具调用数量:`, toolCalls.length);
     const results = [];
-    
-    // 创建MCP客户端
-    let mcpClient: any = null;
     
     for (const toolCall of toolCalls) {
       try {
-        console.log(`Executing tool: ${toolCall.name}`, toolCall.arguments);
+        console.log(`🔧 处理工具调用:`, JSON.stringify(toolCall, null, 2));
+        
+        // 支持两种格式：toolCall.name + toolCall.arguments 或 toolCall.toolName + toolCall.input
+        const toolName = toolCall.name || toolCall.toolName;
+        const toolArguments = toolCall.arguments || toolCall.input || {};
+        
+        console.log(`🔧 执行工具: ${toolName}`);
+        console.log(`🔧 工具参数:`, JSON.stringify(toolArguments, null, 2));
+        
+        if (!toolName) {
+          throw new Error('Tool name is undefined or empty');
+        }
         
         let result;
         
-        if (toolCall.name === 'system:getCurrentTime') {
-          result = {
-            currentTime: new Date().toISOString(),
-            timezone: 'UTC'
-          };
-        } else if (toolCall.name === 'filesystem:readFile') {
-          result = {
-            content: `Mock file content for ${toolCall.arguments.path}`,
-            path: toolCall.arguments.path,
-            size: 1024
-          };
-        } else if (toolCall.name.startsWith('ebook-mcp:')) {
-          // 使用真实的ebook-mcp服务器
-          if (!mcpClient) {
-            try {
-              mcpClient = createMCPClient('ebook-mcp', {});
-              await mcpClient.connect();
-              console.log('Connected to ebook-mcp server');
-            } catch (error) {
-              console.error('Failed to connect to ebook-mcp server:', error);
-              // 如果连接失败，回退到模拟模式
-              return await executeToolsWithMock(toolCalls);
-            }
+        // 解析工具名称，提取服务器名称和工具名称
+        const [serverName, actualToolName] = parseToolName(toolName);
+        console.log(`🔧 解析结果 - 服务器名: ${serverName}, 工具名: ${actualToolName}`);
+        
+        if (serverName) {
+          // 确保服务器连接
+          console.log(`🔧 检查服务器 ${serverName} 连接状态...`);
+          const servers = serverMCPServerManager.getAllServers();
+          const targetServer = servers.find(s => s.name === serverName);
+          
+          if (!targetServer) {
+            throw new Error(`Server ${serverName} not found in configuration`);
           }
           
-          // 提取工具名称（去掉 'ebook-mcp:' 前缀）
-          const toolName = toolCall.name.replace('ebook-mcp:', '');
-          
-          if (toolName === 'get_all_epub_files') {
-            const epubFiles = await mcpClient.callTool(toolName, toolCall.arguments);
-            result = {
-              epub_files: epubFiles,
-              path: toolCall.arguments.path,
-              count: Array.isArray(epubFiles) ? epubFiles.length : 0
-            };
-          } else if (toolName === 'get_all_pdf_files') {
-            const pdfFiles = await mcpClient.callTool(toolName, toolCall.arguments);
-            result = {
-              pdf_files: pdfFiles,
-              path: toolCall.arguments.path,
-              count: Array.isArray(pdfFiles) ? pdfFiles.length : 0
-            };
-          } else if (toolName === 'get_epub_metadata') {
-            result = await mcpClient.callTool(toolName, toolCall.arguments);
-          } else if (toolName === 'get_pdf_metadata') {
-            result = await mcpClient.callTool(toolName, toolCall.arguments);
-          } else {
-            result = await mcpClient.callTool(toolName, toolCall.arguments);
+          // 尝试连接服务器
+          try {
+            await serverMCPServerManager.connectServer(targetServer.id);
+            console.log(`🔧 服务器 ${serverName} 连接成功`);
+          } catch (connectError) {
+            console.log(`🔧 服务器 ${serverName} 连接失败:`, connectError);
+            // 继续尝试执行工具，可能已经连接了
           }
+          
+          // 使用 serverMCPServerManager 执行工具
+          const fullToolName = `${serverName}_${actualToolName}`;
+          console.log(`🔧 完整工具名: ${fullToolName}`);
+          result = await serverMCPServerManager.executeTool(fullToolName, toolArguments);
         } else {
-          result = {
-            message: `Tool ${toolCall.name} executed successfully`,
-            arguments: toolCall.arguments
-          };
+          // 处理系统工具或未识别的工具
+          result = await executeSystemTool(toolCall);
         }
         
         results.push({
-          toolCallId: toolCall.id,
+          toolCallId: toolCall.toolCallId || toolCall.id,
           success: true,
           result
         });
         
-        console.log(`Tool ${toolCall.name} executed successfully`);
+        console.log(`🔧 Tool ${toolName} executed successfully`);
       } catch (error: any) {
-        console.error(`Error executing tool ${toolCall.name}:`, error);
+        console.error(`🔧 Error executing tool ${toolCall.name || toolCall.toolName}:`, error);
+        console.error(`🔧 Error stack:`, error.stack);
         
         results.push({
-          toolCallId: toolCall.id,
+          toolCallId: toolCall.toolCallId || toolCall.id,
           success: false,
           error: error.message || 'Unknown error occurred'
         });
       }
     }
     
-    // 断开MCP客户端连接
-    if (mcpClient) {
-      try {
-        await mcpClient.disconnect();
-      } catch (error) {
-        console.error('Error disconnecting MCP client:', error);
-      }
-    }
-    
+    console.log(`🔧 返回结果:`, JSON.stringify(results, null, 2));
     return NextResponse.json({ results });
   } catch (error) {
-    console.error('Error executing tools:', error);
+    console.error('🔧 Error executing tools:', error);
     return NextResponse.json({ error: 'Failed to execute tools' }, { status: 500 });
   }
 }
 
-// 回退到模拟模式的函数
-async function executeToolsWithMock(toolCalls: any[]) {
-  const results = [];
+// 解析工具名称，提取服务器名称和工具名称
+function parseToolName(fullToolName: string): [string | null, string] {
+  // 支持多种分隔符格式：serverName_toolName 或 serverName:toolName
+  const underscoreIndex = fullToolName.indexOf('_');
+  const colonIndex = fullToolName.indexOf(':');
   
-  for (const toolCall of toolCalls) {
-    try {
-      console.log(`Executing mock tool: ${toolCall.name}`, toolCall.arguments);
-      
-      let result;
-      
-      if (toolCall.name === 'system:getCurrentTime') {
-        result = {
-          currentTime: new Date().toISOString(),
-          timezone: 'UTC'
-        };
-      } else if (toolCall.name === 'filesystem:readFile') {
-        result = {
-          content: `Mock file content for ${toolCall.arguments.path}`,
-          path: toolCall.arguments.path,
-          size: 1024
-        };
-      } else if (toolCall.name === 'ebook-mcp:get_all_epub_files') {
-        result = {
-          epub_files: [
-            '/Users/onebird/Downloads/sample-book.epub',
-            '/Users/onebird/Downloads/programming-guide.epub',
-            '/Users/onebird/Downloads/novel.epub'
-          ],
-          path: toolCall.arguments.path,
-          count: 3
-        };
-      } else if (toolCall.name === 'ebook-mcp:get_all_pdf_files') {
-        result = {
-          pdf_files: [
-            '/Users/onebird/Downloads/document.pdf',
-            '/Users/onebird/Downloads/report.pdf',
-            '/Users/onebird/Downloads/manual.pdf'
-          ],
-          path: toolCall.arguments.path,
-          count: 3
-        };
-      } else if (toolCall.name === 'ebook-mcp:get_epub_metadata') {
-        result = {
-          title: 'Sample Book',
-          author: 'John Doe',
-          language: 'en',
-          publisher: 'Sample Publisher',
-          epub_path: toolCall.arguments.epub_path
-        };
-      } else if (toolCall.name === 'ebook-mcp:get_pdf_metadata') {
-        result = {
-          title: 'Sample Document',
-          author: 'Jane Smith',
-          pages: 150,
-          pdf_path: toolCall.arguments.pdf_path
-        };
-      } else {
-        result = {
-          message: `Tool ${toolCall.name} executed successfully`,
-          arguments: toolCall.arguments
-        };
-      }
-      
-      results.push({
-        toolCallId: toolCall.id,
-        success: true,
-        result
-      });
-      
-      console.log(`Mock tool ${toolCall.name} executed successfully`);
-    } catch (error: any) {
-      console.error(`Error executing mock tool ${toolCall.name}:`, error);
-      
-      results.push({
-        toolCallId: toolCall.id,
-        success: false,
-        error: error.message || 'Unknown error occurred'
-      });
-    }
+  if (underscoreIndex !== -1) {
+    const serverName = fullToolName.substring(0, underscoreIndex);
+    const toolName = fullToolName.substring(underscoreIndex + 1);
+    return [serverName, toolName];
+  } else if (colonIndex !== -1) {
+    const serverName = fullToolName.substring(0, colonIndex);
+    const toolName = fullToolName.substring(colonIndex + 1);
+    return [serverName, toolName];
   }
   
-  return NextResponse.json({ results });
+  // 如果没有分隔符，返回 null 作为服务器名称
+  return [null, fullToolName];
 }
+
+// 执行系统工具
+async function executeSystemTool(toolCall: any): Promise<any> {
+  // 只处理真正的系统工具，不提供 mock 数据
+  switch (toolCall.name) {
+    case 'system:getCurrentTime':
+      return {
+        currentTime: new Date().toISOString(),
+        timezone: 'UTC'
+      };
+    default:
+      throw new Error(`Unknown system tool: ${toolCall.name}`);
+  }
+}
+
+
+
+
+
+
+
+
+
+

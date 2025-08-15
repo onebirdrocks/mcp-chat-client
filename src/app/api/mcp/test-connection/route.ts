@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createMCPClient } from '@/lib/server/mcp-client';
+import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 
 export async function POST(request: NextRequest) {
   console.log('=== MCP Test Connection API Called ===');
@@ -22,17 +22,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`Creating MCP client for server type: ${serverType}`);
-    const client = createMCPClient(serverType, {});
+    console.log(`Testing connection for server: ${serverType}`);
+    
+    // 检查服务器是否存在
+    const server = serverMCPServerManager.getServer(serverType);
+    if (!server) {
+      throw new Error(`Server '${serverType}' not found`);
+    }
     
     console.log('Connecting to MCP server...');
-    await client.connect();
+    await serverMCPServerManager.connectServer(serverType);
     
-    console.log('Listing tools...');
-    const tools = await client.listTools();
+    console.log('Getting tools...');
+    const tools = serverMCPServerManager.getServer(serverType)?.tools || [];
     
     console.log('Disconnecting from MCP server...');
-    await client.disconnect();
+    await serverMCPServerManager.disconnectServer(serverType);
     
     console.log(`Successfully connected to ${serverType} and found ${tools.length} tools`);
     

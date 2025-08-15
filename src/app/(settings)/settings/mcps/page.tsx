@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { MCPServer } from '@/types/mcp';
 import MCPServerList from '@/components/mcp/MCPServerList';
 import { useTheme } from '@/hooks/useTheme';
+import ErrorToast from '@/components/ui/ErrorToast';
 
 export default function MCPPage() {
   const { isDarkMode } = useTheme();
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Load server list from API
@@ -40,11 +42,19 @@ export default function MCPPage() {
       });
       
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add server');
+      }
+      
       if (result.server) {
         setServers(prev => [...prev, result.server]);
+      } else {
+        throw new Error('No server data returned');
       }
     } catch (error) {
       console.error('Failed to add server:', error);
+      setError(`Failed to add server: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -59,11 +69,19 @@ export default function MCPPage() {
       });
       
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update server');
+      }
+      
       if (result.server) {
         setServers(prev => prev.map(s => s.id === server.id ? result.server : s));
+      } else {
+        throw new Error('No server data returned');
       }
     } catch (error) {
       console.error('Failed to update server:', error);
+      setError(`Failed to update server: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -116,11 +134,19 @@ export default function MCPPage() {
       });
       
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete server');
+      }
+      
       if (result.success) {
         setServers(prev => prev.filter(s => s.id !== id));
+      } else {
+        throw new Error('Failed to delete server');
       }
     } catch (error) {
       console.error('Failed to delete server:', error);
+      setError(`Failed to delete server: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -139,7 +165,6 @@ export default function MCPPage() {
 
   return (
     <div className="max-w-4xl">
-
       <div className="space-y-6">
         {/* Server List */}
         <MCPServerList
@@ -150,6 +175,14 @@ export default function MCPPage() {
           onDeleteServer={handleDeleteServer}
         />
       </div>
+      
+      {/* Error Toast */}
+      {error && (
+        <ErrorToast
+          message={error}
+          onClose={() => setError(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,37 +1,44 @@
-import { NextResponse } from 'next/server';
-import { mcpManager } from '@/lib/mcp-manager';
+import { NextRequest, NextResponse } from 'next/server';
+import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // 从 MCP 管理器获取真实的工具列表
-    const allTools = mcpManager.getAllEnabledTools();
+    // 获取所有服务器的工具元数据
+    const toolsMetadata = serverMCPServerManager.getAllToolsMetadata();
     
-    // 转换为 AI SDK 格式的工具定义
-    const tools = allTools.map(tool => ({
-      type: 'function' as const,
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.inputSchema || {
-          type: 'object',
-          properties: {},
-          required: []
+    // 如果没有连接的工具，尝试连接所有服务器
+    if (toolsMetadata.length === 0) {
+      console.log('No connected tools found, attempting to connect all servers...');
+      const servers = serverMCPServerManager.getAllServers();
+      
+      for (const server of servers) {
+        try {
+          console.log(`Attempting to connect to server: ${server.name}`);
+          await serverMCPServerManager.connectServer(server.id);
+          console.log(`Successfully connected to server: ${server.name}`);
+        } catch (error) {
+          console.error(`Failed to connect to server ${server.name}:`, error);
         }
       }
-    }));
+      
+      // 重新获取工具元数据
+      const updatedToolsMetadata = serverMCPServerManager.getAllToolsMetadata();
+      return NextResponse.json({
+        success: true,
+        tools: updatedToolsMetadata
+      });
+    }
 
-    console.log(`Returning ${tools.length} real MCP tools from ${allTools.length} total tools`);
-    
-    return NextResponse.json({ 
-      tools,
-      totalTools: allTools.length,
-      source: 'real-mcp-servers'
+    return NextResponse.json({
+      success: true,
+      tools: toolsMetadata
     });
+
   } catch (error) {
     console.error('Error getting MCP tools:', error);
-    return NextResponse.json({ 
-      error: 'Failed to get tools',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }

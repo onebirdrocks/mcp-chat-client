@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mcpManager } from '@/lib/mcp-manager';
+import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 
 export async function POST(
   request: NextRequest,
@@ -11,10 +11,10 @@ export async function POST(
     console.log(`Force refreshing server: ${serverId}`);
     
     // Force refresh the server
-    await mcpManager.forceRefreshServer(serverId);
+    await serverMCPServerManager.forceRefreshServer(serverId);
     
     // Get updated server info
-    const server = mcpManager.getServer(serverId);
+    const server = serverMCPServerManager.getServer(serverId);
     
     if (!server) {
       return NextResponse.json({
