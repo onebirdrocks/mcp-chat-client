@@ -329,13 +329,17 @@ export class ServerMCPServerManager {
     return finalParameters;
   }
 
-  getAllEnabledTools(): Record<string, any> {
-    const allTools: Record<string, any> = {};
+  // 获取所有启用的工具，按服务器组织
+  getAllEnabledTools(): Record<string, Record<string, any>> {
+    const toolsByServer: Record<string, Record<string, any>> = {};
     
     console.log('🔧 getAllEnabledTools: checking clients...');
     for (const [id, clientWrapper] of this.clients) {
       console.log(`🔧 Client ${id}: connected=${clientWrapper.isConnected}, tools=${clientWrapper.server.tools?.length || 0}`);
       if (clientWrapper.isConnected && clientWrapper.server.tools) {
+        const serverName = clientWrapper.server.name;
+        toolsByServer[serverName] = {};
+        
         for (const tool of clientWrapper.server.tools) {
           // 调试：查看工具的inputSchema结构
           console.log(`🔧 Tool ${tool.name} inputSchema:`, JSON.stringify(tool.inputSchema, null, 2));
@@ -350,13 +354,17 @@ export class ServerMCPServerManager {
           
           console.log(`🔧 Tool ${tool.name} processed parameters:`, JSON.stringify(finalParameters, null, 2));
           
-          allTools[tool.name] = {
+          // 提取原始工具名称（去掉服务器前缀）
+          const originalToolName = tool.name.replace(`${serverName}_`, '');
+          
+          // 使用原始工具名称作为键
+          toolsByServer[serverName][originalToolName] = {
             type: 'function' as const,
             function: {
-              name: tool.name,
+              name: originalToolName, // 使用原始工具名称
               description: tool.description ?
-                `${tool.description} (Use this tool to ${tool.name.replace(/_/g, ' ').toLowerCase()})` :
-                `Tool: ${tool.name} - Use this tool to ${tool.name.replace(/_/g, ' ').toLowerCase()}`,
+                `${tool.description} (Use this tool to ${originalToolName.replace(/_/g, ' ').toLowerCase()})` :
+                `Tool: ${originalToolName} - Use this tool to ${originalToolName.replace(/_/g, ' ').toLowerCase()}`,
               parameters: finalParameters
             }
           };
@@ -364,58 +372,17 @@ export class ServerMCPServerManager {
       }
     }
     
-    console.log('🔧 getAllEnabledTools result:', Object.keys(allTools));
-    console.log('🔧 Sample tool format:', Object.values(allTools)[0]);
+    console.log('🔧 getAllEnabledTools result:', Object.keys(toolsByServer));
     console.log('🔧 Connected clients:', Array.from(this.clients.entries()).map(([id, wrapper]) => ({
       id,
       name: wrapper.server.name,
       isConnected: wrapper.isConnected,
       toolsCount: wrapper.server.tools?.length || 0
     })));
-    return allTools;
+    return toolsByServer;
   }
 
-  // 获取所有工具的 metadata
-  getAllToolsMetadata(): Array<{
-    toolName: string;
-    serverName: string;
-    description: string;
-    inputSchema: any;
-    outputSchema: any;
-    isConnected: boolean;
-  }> {
-    const toolsMetadata: Array<{
-      toolName: string;
-      serverName: string;
-      description: string;
-      inputSchema: any;
-      outputSchema: any;
-      isConnected: boolean;
-    }> = [];
 
-    for (const [id, clientWrapper] of this.clients) {
-      const serverName = clientWrapper.server.name;
-      const isConnected = clientWrapper.isConnected;
-
-      if (isConnected && clientWrapper.server.tools?.length) {
-        for (const tool of clientWrapper.server.tools!) {
-          // 使用公共方法处理schema
-          const processedInputSchema = this.processToolSchema(tool) || tool.inputSchema || {};
-          
-          toolsMetadata.push({
-            toolName: tool.name,
-            serverName,
-            description: tool.description || '',
-            inputSchema: processedInputSchema,
-            outputSchema: tool.outputSchema || {},
-            isConnected
-          });
-        }
-      }
-    }
-
-    return toolsMetadata;
-  }
 
   // 根据工具名称获取工具的 metadata
   getToolMetadata(toolName: string): {

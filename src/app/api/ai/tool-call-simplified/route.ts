@@ -1,6 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText, streamText } from 'ai';
 import { serverMCPServerManager } from '@/lib/mcp-manager-server';
+import { z } from 'zod';
+
+// 将JSON Schema转换为zod schema的辅助函数
+function jsonSchemaToZod(schema: any): z.ZodType<any> {
+  if (schema.type === 'object') {
+    const shape: Record<string, z.ZodType<any>> = {};
+    
+    if (schema.properties) {
+      for (const [key, prop] of Object.entries(schema.properties)) {
+        const propSchema = prop as any;
+        if (propSchema.type === 'string') {
+          shape[key] = z.string();
+        } else if (propSchema.type === 'integer') {
+          shape[key] = z.number().int();
+        } else if (propSchema.type === 'number') {
+          shape[key] = z.number();
+        } else if (propSchema.type === 'boolean') {
+          shape[key] = z.boolean();
+        } else {
+          shape[key] = z.any();
+        }
+      }
+    }
+    
+    let zodSchema = z.object(shape);
+    
+    // 处理required字段
+    if (schema.required && Array.isArray(schema.required)) {
+      for (const requiredField of schema.required) {
+        if (shape[requiredField]) {
+          // zod对象默认所有字段都是可选的，所以这里不需要特殊处理
+        }
+      }
+    }
+    
+    return zodSchema;
+  }
+  
+  return z.any();
+}
 
 // 获取模型实例
 function getModel(providerId: string, modelId: string) {
@@ -53,10 +93,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取工具
-    let tools = serverMCPServerManager.getAllEnabledTools();
+    let toolsByServer = serverMCPServerManager.getAllEnabledTools();
     
     // 如果没有工具，尝试连接所有服务器
-    if (Object.keys(tools).length === 0) {
+    if (Object.keys(toolsByServer).length === 0) {
       console.log('🔧 No tools found, attempting to connect all servers...');
       const servers = serverMCPServerManager.getAllServers();
       
@@ -71,50 +111,44 @@ export async function POST(request: NextRequest) {
       }
       
       // 重新获取工具
-      tools = serverMCPServerManager.getAllEnabledTools();
-      console.log('🔧 Tools after connecting servers:', Object.keys(tools));
+      toolsByServer = serverMCPServerManager.getAllEnabledTools();
+      console.log('🔧 Tools after connecting servers:', Object.keys(toolsByServer));
     }
-    console.log('🔧 Available tools for model:', Object.keys(tools));
-    console.log('🔧 Tools count:', Object.keys(tools).length);
-    console.log('🔧 ==========================================');
-    console.log('🔧 TOOLS DEBUG INFO START');
-    console.log('🔧 ==========================================');
     
-    // 转换为AI SDK期望的格式
-    const toolsArray = Object.entries(tools).map(([name, tool]) => tool);
-    console.log('🔧 Tools array length:', toolsArray.length);
+    // 转换为AI SDK格式的工具
+    const toolsToUse: Record<string, any> = {};
     
-    // 检查是否有电子书相关工具
-    const ebookTools = toolsArray.filter(tool => 
-      tool.function.name.includes('get_all_') && 
-      (tool.function.name.includes('pdf') || tool.function.name.includes('epub'))
-    );
-    console.log('🔧 Ebook tools for model:', ebookTools.length);
-    console.log('🔧 Ebook tool names:', ebookTools.map(t => t.function.name));
+    for (const [serverName, serverTools] of Object.entries(toolsByServer)) {
+      for (const [toolName, toolData] of Object.entries(serverTools)) {
+        const functionData = toolData.function;
+        
+        // 使用 serverName_toolName 作为工具的唯一标识符
+        const fullToolName = `${serverName}_${toolName}`;
+        
+        // 使用直接的JSON Schema定义工具
+        toolsToUse[fullToolName] = {
+          description: functionData.description,
+          inputSchema: functionData.parameters, // 直接使用JSON Schema
+          execute: async (args: any) => {
+            console.log(`🔧 Executing tool ${fullToolName} with args:`, args);
+            return await serverMCPServerManager.executeTool(fullToolName, args);
+          }
+        };
+      }
+    }
     
-    // 使用从MCP服务器获取的动态工具
-    const toolsToUse = toolsArray;
-    console.log('🔧 Using tools count:', toolsToUse.length);
+    console.log('🔧 Tools converted to AI SDK v5 format:', Object.keys(toolsToUse));
+    console.log('🔧 Using tools count:', Object.keys(toolsToUse).length);
     
     // 检查工具格式是否正确
-    if (toolsToUse.length > 0) {
-      console.log('🔧 First tool format:', JSON.stringify(toolsToUse[0], null, 2));
-      console.log('🔧 First tool parameters:', JSON.stringify(toolsToUse[0].function.parameters, null, 2));
+    if (Object.keys(toolsToUse).length > 0) {
+      const firstToolName = Object.keys(toolsToUse)[0];
+      console.log('🔧 First tool format:', firstToolName);
+      console.log('🔧 Sample tool structure:', toolsToUse[firstToolName]);
       
-      // 检查所有工具的参数格式
-      for (let i = 0; i < Math.min(toolsToUse.length, 10); i++) {
-        const tool = toolsToUse[i];
-        console.log(`🔧 Tool ${i} (${tool.function.name}) parameters:`, JSON.stringify(tool.function.parameters, null, 2));
-      }
-      
-      // 检查是否有工具参数格式不正确
-      const invalidTools = toolsToUse.filter((tool: any) => {
-        const params = tool.function.parameters;
-        return !params || !params.type || params.type !== 'object' || !params.properties;
-      });
-      
-      if (invalidTools.length > 0) {
-        console.log('🔧 Invalid tools found:', invalidTools.map((t: any) => t.function.name));
+      // 检查所有工具
+      for (const [toolName, toolData] of Object.entries(toolsToUse)) {
+        console.log(`🔧 Tool ${toolName}:`, toolData);
       }
     }
     console.log('🔧 ==========================================');
@@ -135,13 +169,22 @@ export async function POST(request: NextRequest) {
 
     if (stream) {
                         // 流式响应
-                  console.log('🔧 Final tools format before AI SDK call (streaming):', JSON.stringify(toolsToUse[0], null, 2));
+                  console.log('🔧 Final tools format before AI SDK call (streaming):', Object.keys(toolsToUse));
+                  
+                  // 构建请求体用于日志
+                  const requestBody = {
+                    model: model.modelId,
+                    messages,
+                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
+                    temperature: 0.7
+                  };
+                  
+                  console.log('🔧 Request body to LLM (streaming):', JSON.stringify(requestBody, null, 2));
                   
                   const result = await streamText({
                     model,
                     messages,
-                    tools: toolsToUse.length > 0 ? toolsToUse as any : undefined,
-                    toolChoice: toolsToUse.length > 0 ? 'auto' : undefined,
+                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
                     temperature: 0.7
                   });
       
@@ -155,81 +198,8 @@ export async function POST(request: NextRequest) {
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             }
             
-            // 检查是否有工具调用
-            const toolCallsArray = await result.toolCalls;
-            if (toolCallsArray && toolCallsArray.length > 0) {
-              // 发送工具调用信息
-              const toolCallsData = JSON.stringify({ 
-                type: 'tool_calls', 
-                toolCalls: result.toolCalls 
-              });
-              controller.enqueue(encoder.encode(`data: ${toolCallsData}\n\n`));
-              
-              // 执行工具调用
-              const toolResults: any[] = [];
-              
-              for (const toolCall of toolCallsArray) {
-                try {
-                  const result = await serverMCPServerManager.executeTool(toolCall.toolName, toolCall.input as Record<string, unknown>);
-                  const toolResult = {
-                    toolCallId: toolCall.toolCallId,
-                    success: true,
-                    result
-                  };
-                  toolResults.push(toolResult);
-                  
-                  // 发送工具执行结果
-                  const toolResultData = JSON.stringify({ 
-                    type: 'tool_result', 
-                    toolResult 
-                  });
-                  controller.enqueue(encoder.encode(`data: ${toolResultData}\n\n`));
-                } catch (error) {
-                  const toolResult = {
-                    toolCallId: toolCall.toolCallId,
-                    success: false,
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                  };
-                  toolResults.push(toolResult);
-                  
-                  // 发送工具执行错误
-                  const toolErrorData = JSON.stringify({ 
-                    type: 'tool_error', 
-                    toolResult 
-                  });
-                  controller.enqueue(encoder.encode(`data: ${toolErrorData}\n\n`));
-                }
-              }
-              
-              // 如果有工具调用，继续与AI对话
-              if (toolResults.length > 0) {
-                const finalMessages = [...messages];
-                
-                // 添加工具结果作为用户消息
-                const toolResultsText = toolResults.map(result => 
-                  result.success ? JSON.stringify(result.result) : `Error: ${result.error}`
-                ).join('\n\n');
-                
-                finalMessages.push({
-                  role: 'user' as const,
-                  content: `工具执行结果：\n\n${toolResultsText}\n\n请基于这些结果继续回答。`
-                });
-                
-                // 继续流式对话
-                const finalResult = await streamText({
-                  model,
-                  messages: finalMessages,
-                  tools: toolsToUse.length > 0 ? toolsToUse as any : undefined,
-                  toolChoice: toolsToUse.length > 0 ? 'auto' : undefined,
-                  temperature: 0.7
-                });
-                
-                for await (const chunk of finalResult.textStream) {
-                  const data = JSON.stringify({ content: chunk });
-                  controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-                }
-              }
-            }
+            // AI-SDK会自动处理有execute函数的工具调用
+            // 不需要手动处理工具调用
             
             // 发送完成信号
             controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
@@ -252,16 +222,25 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // 非流式响应 - 使用streamText然后收集结果
-      console.log('🔧 About to call streamText with tools:', JSON.stringify(toolsToUse, null, 2));
+      console.log('🔧 About to call streamText with tools:', Object.keys(toolsToUse));
       
                         // 使用工具调用
-                  console.log('🔧 Final tools format before AI SDK call:', JSON.stringify(toolsToUse[0], null, 2));
+                  console.log('🔧 Final tools format before AI SDK call:', Object.keys(toolsToUse));
+                  
+                  // 构建请求体用于日志
+                  const requestBody = {
+                    model: model.modelId,
+                    messages,
+                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
+                    temperature: 0.7
+                  };
+                  
+                  console.log('🔧 Request body to LLM (non-streaming):', JSON.stringify(requestBody, null, 2));
                   
                   const result = await streamText({
                     model,
                     messages,
-                    tools: toolsToUse.length > 0 ? toolsToUse as any : undefined,
-                    toolChoice: toolsToUse.length > 0 ? 'auto' : undefined,
+                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
                     temperature: 0.7
                   });
       
@@ -271,27 +250,15 @@ export async function POST(request: NextRequest) {
         textContent += chunk;
       }
       
-      // 检查是否有工具调用
-      const toolCallsArray = await result.toolCalls;
-      if (toolCallsArray && toolCallsArray.length > 0) {
-        return NextResponse.json({
-          success: true,
-          result: {
-            text: textContent,
-            toolCalls: toolCallsArray,
-            toolResults: []
-          }
-        });
-      } else {
-        return NextResponse.json({
-          success: true,
-          result: {
-            text: textContent,
-            toolCalls: [],
-            toolResults: []
-          }
-        });
-      }
+      // AI-SDK会自动处理工具调用，直接返回文本内容
+      return NextResponse.json({
+        success: true,
+        result: {
+          text: textContent,
+          toolCalls: [],
+          toolResults: []
+        }
+      });
     }
 
   } catch (error) {

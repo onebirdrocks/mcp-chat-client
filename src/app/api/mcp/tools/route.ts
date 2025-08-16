@@ -3,11 +3,11 @@ import { serverMCPServerManager } from '@/lib/mcp-manager-server';
 
 export async function GET(request: NextRequest) {
   try {
-    // 获取所有服务器的工具元数据
-    const toolsMetadata = serverMCPServerManager.getAllToolsMetadata();
+    // 使用 getAllEnabledTools 获取工具数据
+    const toolsByServer = serverMCPServerManager.getAllEnabledTools();
     
     // 如果没有连接的工具，尝试连接所有服务器
-    if (toolsMetadata.length === 0) {
+    if (Object.keys(toolsByServer).length === 0) {
       console.log('No connected tools found, attempting to connect all servers...');
       const servers = serverMCPServerManager.getAllServers();
       
@@ -21,13 +21,20 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // 重新获取工具元数据
-      const updatedToolsMetadata = serverMCPServerManager.getAllToolsMetadata();
+      // 重新获取工具数据
+      const updatedToolsByServer = serverMCPServerManager.getAllEnabledTools();
+      
+      // 转换为扁平化的工具列表格式
+      const toolsMetadata = convertToolsToMetadata(updatedToolsByServer);
+      
       return NextResponse.json({
         success: true,
-        tools: updatedToolsMetadata
+        tools: toolsMetadata
       });
     }
+
+    // 转换为扁平化的工具列表格式
+    const toolsMetadata = convertToolsToMetadata(toolsByServer);
 
     return NextResponse.json({
       success: true,
@@ -41,4 +48,40 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// 辅助函数：将按服务器组织的工具转换为扁平化的工具列表
+function convertToolsToMetadata(toolsByServer: Record<string, Record<string, any>>): Array<{
+  toolName: string;
+  serverName: string;
+  description: string;
+  inputSchema: any;
+  outputSchema: any;
+  isConnected: boolean;
+}> {
+  const toolsMetadata: Array<{
+    toolName: string;
+    serverName: string;
+    description: string;
+    inputSchema: any;
+    outputSchema: any;
+    isConnected: boolean;
+  }> = [];
+
+  for (const [serverName, serverTools] of Object.entries(toolsByServer)) {
+    for (const [toolName, toolData] of Object.entries(serverTools)) {
+      const functionData = toolData.function;
+      
+      toolsMetadata.push({
+        toolName: toolName, // 使用原始工具名称
+        serverName,
+        description: functionData.description || '',
+        inputSchema: functionData.parameters || {},
+        outputSchema: {}, // 暂时为空，因为getAllEnabledTools没有包含outputSchema
+        isConnected: true // 因为getAllEnabledTools只返回已连接的工具
+      });
+    }
+  }
+
+  return toolsMetadata;
 }

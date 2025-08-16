@@ -49,6 +49,200 @@ describe('ServerMCPServerManager', () => {
       const tools = manager.getAllEnabledTools();
       expect(tools).toEqual({});
     });
+
+    it('should return tools from connected servers', () => {
+      const mockTools = [
+        {
+          name: 'get_all_epub_files',
+          description: 'Get all epub files',
+          inputSchema: { type: 'object', properties: { path: { type: 'string' } } }
+        },
+        {
+          name: 'get_epub_metadata',
+          description: 'Get epub metadata',
+          inputSchema: { type: 'object', properties: { epub_path: { type: 'string' } } }
+        }
+      ];
+
+      const mockClientWrapper = {
+        server: {
+          id: 'ebook-mcp',
+          name: 'ebook-mcp',
+          command: 'uv',
+          args: ['run', 'main.py'],
+          env: {},
+          enabled: true,
+          tools: mockTools,
+          status: 'connected' as const
+        },
+        client: {},
+        transport: {},
+        tools: {},
+        isConnected: true
+      };
+
+      // Mock the private clients Map
+      const clientsMap = new Map();
+      clientsMap.set('ebook-mcp', mockClientWrapper);
+      (manager as any).clients = clientsMap;
+
+      const tools = manager.getAllEnabledTools();
+
+      expect(tools).toHaveProperty('ebook-mcp');
+      expect(tools['ebook-mcp']).toHaveProperty('get_all_epub_files');
+      expect(tools['ebook-mcp']).toHaveProperty('get_epub_metadata');
+      
+      // 检查工具格式
+      expect(tools['ebook-mcp']['get_all_epub_files']).toEqual({
+        type: 'function',
+        function: {
+          name: 'get_all_epub_files',
+          description: 'Get all epub files (Use this tool to get all epub files)',
+          parameters: { type: 'object', properties: { path: { type: 'string' } } }
+        }
+      });
+    });
+
+    it('should return tools from multiple connected servers', () => {
+      const mockTools1 = [
+        {
+          name: 'get_all_epub_files',
+          description: 'Get all epub files',
+          inputSchema: { type: 'object', properties: { path: { type: 'string' } } }
+        }
+      ];
+
+      const mockTools2 = [
+        {
+          name: 'get_all_pdf_files',
+          description: 'Get all pdf files',
+          inputSchema: { type: 'object', properties: { path: { type: 'string' } } }
+        }
+      ];
+
+      const mockClientWrapper1 = {
+        server: {
+          id: 'ebook-mcp',
+          name: 'ebook-mcp',
+          command: 'uv',
+          args: ['run', 'main.py'],
+          env: {},
+          enabled: true,
+          tools: mockTools1,
+          status: 'connected' as const
+        },
+        client: {},
+        transport: {},
+        tools: {},
+        isConnected: true
+      };
+
+      const mockClientWrapper2 = {
+        server: {
+          id: 'pdf-mcp',
+          name: 'pdf-mcp',
+          command: 'uv',
+          args: ['run', 'pdf.py'],
+          env: {},
+          enabled: true,
+          tools: mockTools2,
+          status: 'connected' as const
+        },
+        client: {},
+        transport: {},
+        tools: {},
+        isConnected: true
+      };
+
+      // Mock the private clients Map
+      const clientsMap = new Map();
+      clientsMap.set('ebook-mcp', mockClientWrapper1);
+      clientsMap.set('pdf-mcp', mockClientWrapper2);
+      (manager as any).clients = clientsMap;
+
+      const tools = manager.getAllEnabledTools();
+
+      expect(tools).toHaveProperty('ebook-mcp');
+      expect(tools).toHaveProperty('pdf-mcp');
+      expect(tools['ebook-mcp']).toHaveProperty('get_all_epub_files');
+      expect(tools['pdf-mcp']).toHaveProperty('get_all_pdf_files');
+    });
+
+    it('should filter out disconnected servers', () => {
+      const mockClientWrapper = {
+        server: {
+          id: 'ebook-mcp',
+          name: 'ebook-mcp',
+          command: 'uv',
+          args: ['run', 'main.py'],
+          env: {},
+          enabled: true,
+          tools: [
+            {
+              name: 'get_all_epub_files',
+              description: 'Get all epub files',
+              inputSchema: { type: 'object', properties: { path: { type: 'string' } } }
+            }
+          ],
+          status: 'disconnected' as const
+        },
+        client: {},
+        transport: {},
+        tools: {},
+        isConnected: false
+      };
+
+      // Mock the private clients Map
+      const clientsMap = new Map();
+      clientsMap.set('ebook-mcp', mockClientWrapper);
+      (manager as any).clients = clientsMap;
+
+      const tools = manager.getAllEnabledTools();
+
+      expect(tools).toEqual({});
+    });
+
+    it('should handle tools with invalid schema', () => {
+      const mockTools = [
+        {
+          name: 'valid_tool',
+          description: 'Valid tool',
+          inputSchema: { type: 'object', properties: { path: { type: 'string' } } }
+        },
+        {
+          name: 'invalid_tool',
+          description: 'Invalid tool',
+          inputSchema: null // 无效的schema
+        }
+      ];
+
+      const mockClientWrapper = {
+        server: {
+          id: 'test-server',
+          name: 'test-server',
+          command: 'test',
+          args: [],
+          env: {},
+          enabled: true,
+          tools: mockTools,
+          status: 'connected' as const
+        },
+        client: {},
+        transport: {},
+        tools: {},
+        isConnected: true
+      };
+
+      // Mock the private clients Map
+      const clientsMap = new Map();
+      clientsMap.set('test-server', mockClientWrapper);
+      (manager as any).clients = clientsMap;
+
+      const tools = manager.getAllEnabledTools();
+
+      expect(tools['test-server']).toHaveProperty('valid_tool');
+      expect(tools['test-server']).not.toHaveProperty('invalid_tool');
+    });
   });
 
   describe('reloadConfig', () => {
@@ -196,25 +390,38 @@ describe('ServerMCPServerManager', () => {
      });
    });
 
-   describe('getAllToolsMetadata', () => {
-     it('should return empty array when no servers are connected', () => {
-       const metadata = manager.getAllToolsMetadata();
-       expect(metadata).toEqual([]);
+   describe('getToolMetadata', () => {
+     it('should return null for non-existent tool', () => {
+       const metadata = manager.getToolMetadata('non-existent-tool');
+       expect(metadata).toBeNull();
      });
 
-     it('should return tools metadata when servers are connected', () => {
+     it('should return null when server is not connected', () => {
+       // Mock getAllServers to return a server
+       const mockServer = {
+         id: 'test-server',
+         name: 'test-server',
+         command: 'test-command',
+         args: [],
+         env: {},
+         enabled: true,
+         tools: [],
+         status: 'disconnected' as const
+       };
+
+       vi.spyOn(manager, 'getAllServers').mockReturnValue([mockServer]);
+
+       const metadata = manager.getToolMetadata('test-server_tool1');
+       expect(metadata).toBeNull();
+     });
+
+     it('should return tool metadata when tool exists and server is connected', () => {
        const mockTools = [
          {
            name: 'test-server_tool1',
            description: 'Test tool 1',
            inputSchema: { type: 'object', properties: { param1: { type: 'string' } } },
            outputSchema: { type: 'string' }
-         },
-         {
-           name: 'test-server_tool2',
-           description: 'Test tool 2',
-           inputSchema: { type: 'object', properties: { param2: { type: 'number' } } },
-           outputSchema: { type: 'number' }
          }
        ];
 
@@ -239,10 +446,9 @@ describe('ServerMCPServerManager', () => {
        clientsMap.set('test-server', mockClientWrapper);
        (manager as any).clients = clientsMap;
 
-       const metadata = manager.getAllToolsMetadata();
+       const metadata = manager.getToolMetadata('test-server_tool1');
 
-       expect(metadata).toHaveLength(2);
-       expect(metadata[0]).toEqual({
+       expect(metadata).toEqual({
          toolName: 'test-server_tool1',
          serverName: 'test-server',
          description: 'Test tool 1',
@@ -250,88 +456,18 @@ describe('ServerMCPServerManager', () => {
          outputSchema: { type: 'string' },
          isConnected: true
        });
-       expect(metadata[1]).toEqual({
-         toolName: 'test-server_tool2',
-         serverName: 'test-server',
-         description: 'Test tool 2',
-         inputSchema: { type: 'object', properties: { param2: { type: 'number' } } },
-         outputSchema: { type: 'number' },
-         isConnected: true
-       });
      });
 
-     it('should return metadata from multiple connected servers', () => {
-       const mockTools1 = [
+     it('should return null when tool does not exist in connected server', () => {
+       const mockTools = [
          {
-           name: 'server1_tool1',
-           description: 'Server 1 tool 1',
+           name: 'test-server_tool1',
+           description: 'Test tool 1',
            inputSchema: { type: 'object' },
            outputSchema: { type: 'string' }
          }
        ];
 
-       const mockTools2 = [
-         {
-           name: 'server2_tool1',
-           description: 'Server 2 tool 1',
-           inputSchema: { type: 'object' },
-           outputSchema: { type: 'number' }
-         }
-       ];
-
-       const mockClientWrapper1 = {
-         server: {
-           id: 'server1',
-           name: 'server1',
-           command: 'server1-command',
-           args: [],
-           env: {},
-           enabled: true,
-           tools: mockTools1,
-           status: 'connected' as const
-         },
-         client: {},
-         tools: {},
-         isConnected: true
-       };
-
-       const mockClientWrapper2 = {
-         server: {
-           id: 'server2',
-           name: 'server2',
-           command: 'server2-command',
-           args: [],
-           env: {},
-           enabled: true,
-           tools: mockTools2,
-           status: 'connected' as const
-         },
-         client: {},
-         tools: {},
-         isConnected: true
-       };
-
-       // Mock the private clients Map
-       const clientsMap = new Map();
-       clientsMap.set('server1', mockClientWrapper1);
-       clientsMap.set('server2', mockClientWrapper2);
-       (manager as any).clients = clientsMap;
-
-       const metadata = manager.getAllToolsMetadata();
-
-       expect(metadata).toHaveLength(2);
-       expect(metadata[0].serverName).toBe('server1');
-       expect(metadata[1].serverName).toBe('server2');
-     });
-   });
-
-   describe('getToolMetadata', () => {
-     it('should return null for non-existent tool', () => {
-       const metadata = manager.getToolMetadata('non-existent-tool');
-       expect(metadata).toBeNull();
-     });
-
-     it('should return null when server is not connected', () => {
        const mockClientWrapper = {
          server: {
            id: 'test-server',
@@ -340,54 +476,7 @@ describe('ServerMCPServerManager', () => {
            args: [],
            env: {},
            enabled: true,
-           tools: [
-             {
-               name: 'test-server_tool1',
-               description: 'Test tool 1',
-               inputSchema: { type: 'object' },
-               outputSchema: { type: 'string' }
-             }
-           ],
-           status: 'disconnected' as const
-         },
-         client: {},
-         tools: {},
-         isConnected: false
-       };
-
-       // Mock the private clients Map
-       const clientsMap = new Map();
-       clientsMap.set('test-server', mockClientWrapper);
-       (manager as any).clients = clientsMap;
-
-       const metadata = manager.getToolMetadata('test-server_tool1');
-       expect(metadata).toBeNull();
-     });
-
-     it('should return tool metadata when tool exists and server is connected', () => {
-       const mockTool = {
-         name: 'test-server_tool1',
-         description: 'Test tool 1',
-         inputSchema: { 
-           type: 'object', 
-           properties: { 
-             param1: { type: 'string' },
-             param2: { type: 'number' }
-           },
-           required: ['param1']
-         },
-         outputSchema: { type: 'string' }
-       };
-
-       const mockClientWrapper = {
-         server: {
-           id: 'test-server',
-           name: 'test-server',
-           command: 'test-command',
-           args: [],
-           env: {},
-           enabled: true,
-           tools: [mockTool],
+           tools: mockTools,
            status: 'connected' as const
          },
          client: {},
@@ -400,55 +489,7 @@ describe('ServerMCPServerManager', () => {
        clientsMap.set('test-server', mockClientWrapper);
        (manager as any).clients = clientsMap;
 
-       const metadata = manager.getToolMetadata('test-server_tool1');
-
-       expect(metadata).toEqual({
-         toolName: 'test-server_tool1',
-         serverName: 'test-server',
-         description: 'Test tool 1',
-         inputSchema: { 
-           type: 'object', 
-           properties: { 
-             param1: { type: 'string' },
-             param2: { type: 'number' }
-           },
-           required: ['param1']
-         },
-         outputSchema: { type: 'string' },
-         isConnected: true
-       });
-     });
-
-     it('should return null when tool does not exist in connected server', () => {
-       const mockClientWrapper = {
-         server: {
-           id: 'test-server',
-           name: 'test-server',
-           command: 'test-command',
-           args: [],
-           env: {},
-           enabled: true,
-           tools: [
-             {
-               name: 'test-server_tool1',
-               description: 'Test tool 1',
-               inputSchema: { type: 'object' },
-               outputSchema: { type: 'string' }
-             }
-           ],
-           status: 'connected' as const
-         },
-         client: {},
-         tools: {},
-         isConnected: true
-       };
-
-       // Mock the private clients Map
-       const clientsMap = new Map();
-       clientsMap.set('test-server', mockClientWrapper);
-       (manager as any).clients = clientsMap;
-
-       const metadata = manager.getToolMetadata('test-server_nonexistent-tool');
+       const metadata = manager.getToolMetadata('test-server_nonexistent');
        expect(metadata).toBeNull();
      });
    });

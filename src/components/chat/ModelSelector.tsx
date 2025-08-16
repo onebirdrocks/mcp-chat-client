@@ -109,7 +109,7 @@ export default function ModelSelector({
           {selectedModelData ? (
             <>
               <span className="font-medium">{selectedModelData.name}</span>
-              {selectedModelData.capabilities.supportsTools && (
+              {selectedModelData.capabilities?.supportsTools && (
                 <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                   支持工具
                 </span>
@@ -147,7 +147,7 @@ export default function ModelSelector({
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium">{model.name}</span>
-                    {model.capabilities.supportsTools && (
+                    {model.capabilities?.supportsTools && (
                       <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                         支持工具
                       </span>
@@ -156,9 +156,9 @@ export default function ModelSelector({
                   <div className="text-xs text-gray-500 mb-2">
                     {model.description}
                   </div>
-                  {model.capabilities.supportsTools && (
+                  {model.capabilities?.supportsTools && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      {model.capabilities.toolTypes.map((toolType) => (
+                      {model.capabilities.toolTypes?.map((toolType) => (
                         <span
                           key={toolType}
                           className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
