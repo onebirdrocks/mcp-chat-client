@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "ebook-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/onebird/github/ebook-mcp/src/ebook_mcp/",
+        "run",
+        "main.py"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

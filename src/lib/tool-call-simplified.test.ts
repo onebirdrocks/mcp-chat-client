@@ -21,7 +21,7 @@ describe('SimplifiedToolCallClient', () => {
           toolCalls: [
             {
               toolCallId: '1',
-              toolName: 'ebook-mcp_get_all_pdf_files',
+              toolName: 'get_all_pdf_files',
               input: { path: '/Users/onebird/Downloads' }
             }
           ]
@@ -91,8 +91,8 @@ describe('SimplifiedToolCallClient', () => {
       const toolCalls = [
         {
           id: '1',
-          name: 'ebook-mcp_get_all_pdf_files',
-          arguments: { path: '/Users/onebird/Downloads' }
+          toolName: 'get_all_pdf_files',
+          input: { path: '/Users/onebird/Downloads' }
         }
       ];
 
@@ -126,8 +126,8 @@ describe('SimplifiedToolCallClient', () => {
       const toolCalls = [
         {
           id: '1',
-          name: 'invalid_tool',
-          arguments: {}
+          toolName: 'invalid_tool',
+          input: {}
         }
       ];
 

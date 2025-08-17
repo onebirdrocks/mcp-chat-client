@@ -8,7 +8,7 @@ import { ToolCall, ToolCallResult } from '@/lib/tool-call-client-simplified';
 interface InlineToolCallConfirmationProps {
   toolCalls: ToolCall[];
   toolResults?: ToolCallResult[];
-  onConfirm: (toolCalls: ToolCall[]) => void;
+  onConfirm: (toolCalls: ToolCall[], sendToLLM?: boolean) => void;
   onCancel: () => void;
   onExecuteSingle?: (toolCall: ToolCall) => void;
   isWaitingForLLM?: boolean;
@@ -34,7 +34,12 @@ export default function InlineToolCallConfirmation({
   useEffect(() => {
     if (toolResults && toolResults.length > 0) {
       const executedIds = new Set(toolResults.map(result => result.toolCallId));
-      setExecutedTools(executedIds);
+      console.log('🔧 Updating executed tools from toolResults:', Array.from(executedIds));
+      setExecutedTools(prev => {
+        const newSet = new Set([...prev, ...executedIds]);
+        console.log('🔧 New executed tools set:', Array.from(newSet));
+        return newSet;
+      });
       
       // 从正在执行的工具中移除已完成的工具
       setExecutingTools(prev => {
@@ -42,25 +47,8 @@ export default function InlineToolCallConfirmation({
         executedIds.forEach(id => newSet.delete(id));
         return newSet;
       });
-      
-      // 如果当前工具已经执行完成，自动前进到下一个未执行的工具
-      const currentTool = toolCalls[currentToolIndex];
-      if (currentTool && executedIds.has(currentTool.id)) {
-        // 找到下一个未执行的工具
-        const nextToolIndex = toolCalls.findIndex((tool, index) => 
-          index > currentToolIndex && !executedIds.has(tool.id)
-        );
-        
-        if (nextToolIndex !== -1) {
-          setCurrentToolIndex(nextToolIndex);
-        } else {
-          // 如果没有下一个未执行的工具，说明所有工具都执行完成了
-          // 将 currentToolIndex 设置为 -1 表示没有当前工具
-          setCurrentToolIndex(-1);
-        }
-      }
     }
-  }, [toolResults, currentToolIndex, toolCalls]);
+  }, [toolResults]);
 
   // 当所有工具都有结果时，确保所有工具都被标记为已执行
   useEffect(() => {
@@ -86,6 +74,16 @@ export default function InlineToolCallConfirmation({
     const completedToolsCount = executedTools.size + skippedTools.size;
     const totalToolsCount = toolCalls.length;
     
+    console.log('🔧 自动完成检查:', {
+      executedToolsSize: executedTools.size,
+      skippedToolsSize: skippedTools.size,
+      completedToolsCount,
+      totalToolsCount,
+      autoCompleteEnabled,
+      executedTools: Array.from(executedTools),
+      skippedTools: Array.from(skippedTools)
+    });
+    
     if (autoCompleteEnabled && completedToolsCount === totalToolsCount && totalToolsCount > 0) {
       console.log('🚀 自动完成触发:', {
         executedToolsSize: executedTools.size,
@@ -97,8 +95,8 @@ export default function InlineToolCallConfirmation({
       
       // 延迟一点时间让用户看到执行完成的状态
       const timer = setTimeout(() => {
-        console.log('🚀 执行自动完成回调');
-        onConfirm(toolCalls);
+        console.log('🚀 执行自动完成回调 - 不发送给LLM');
+        onConfirm(toolCalls, false); // 自动完成时不发送给LLM
       }, 1000); // 增加延迟时间，让用户看到"执行成功"状态
       
       return () => clearTimeout(timer);
@@ -161,9 +159,20 @@ export default function InlineToolCallConfirmation({
 
   const formatArguments = (args: Record<string, unknown>): string => {
     try {
+      console.log('🔧 Formatting arguments:', args);
+      if (!args || typeof args !== 'object') {
+        return String(args || 'No arguments');
+      }
+      
+      // 检查是否为空对象
+      if (Object.keys(args).length === 0) {
+        return 'No arguments';
+      }
+      
       return JSON.stringify(args, null, 2);
-    } catch {
-      return String(args);
+    } catch (error) {
+      console.error('🔧 Error formatting arguments:', error);
+      return String(args || 'Error formatting arguments');
     }
   };
 
@@ -177,6 +186,19 @@ export default function InlineToolCallConfirmation({
   const getToolResult = (toolId: string) => {
     return toolResults?.find(result => result.toolCallId === toolId);
   };
+
+  // 获取所有涉及的服务器
+  const getInvolvedServers = () => {
+    const servers = new Set<string>();
+    toolCalls.forEach(tool => {
+      if (tool.serverName) {
+        servers.add(tool.serverName);
+      }
+    });
+    return Array.from(servers);
+  };
+
+  const involvedServers = getInvolvedServers();
 
   return (
     <div className={`mt-4 rounded-lg border w-full ${
@@ -202,6 +224,25 @@ export default function InlineToolCallConfirmation({
             }`}>
               工具执行
             </h3>
+            {/* 显示涉及的服务器 */}
+            {involvedServers.length > 0 && (
+              <div className="flex items-center gap-1 mt-1 mb-2">
+                <span className={`text-xs ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  服务器:
+                </span>
+                {involvedServers.map((server, index) => (
+                  <span key={server} className={`text-xs px-2 py-0.5 rounded ${
+                    isDarkMode 
+                      ? 'bg-gray-700 text-gray-300' 
+                      : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {server}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-2 mt-1">
               <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                 executedCount === totalCount
@@ -257,6 +298,8 @@ export default function InlineToolCallConfirmation({
       {/* Tools List */}
       <div className="p-4 space-y-3">
         {toolCalls.map((tool, index) => {
+          // 调试工具结构
+          console.log(`🔧 Tool ${index} structure:`, tool);
           const isCurrent = index === currentToolIndex;
           const isExecuted = executedTools.has(tool.id);
           const isExecuting = executingTools.has(tool.id);
@@ -371,59 +414,103 @@ export default function InlineToolCallConfirmation({
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium ${
-                          isDarkMode ? 'text-white' : 'text-gray-900'
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {tool.toolName}
+                          </span>
+                          {tool.serverName && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              isDarkMode 
+                                ? 'bg-gray-700 text-gray-400' 
+                                : 'bg-gray-200 text-gray-600'
+                            }`}>
+                              {tool.serverName}
+                            </span>
+                          )}
+                        </div>
+                        <div className={`text-xs ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
                         }`}>
-                          {tool.name}
-                        </span>
+                          {isExecuting ? '正在执行' : 
+                           isSkipped ? '已跳过' :
+                           isExecuted ? (
+                             isSuccess ? '执行成功' : '执行失败'
+                           ) : '等待执行'}
+                        </div>
                       </div>
-                      <div className={`text-xs ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {isExecuting ? '正在执行' : 
-                         isCurrent && !allToolsCompleted ? '等待确认执行' : 
-                         isExecuted ? (
-                           isWaitingForLLM ? 
-                             (isSuccess ? '执行成功，等待AI处理' : '执行失败，等待AI处理') :
-                             (isSuccess ? '执行成功' : '执行失败')
-                         ) : allToolsCompleted ? (
-                           isWaitingForLLM ? '执行成功，等待AI处理' : '执行成功'
-                         ) : '等待执行'}
-                      </div>
+                      
+                      {/* 工具级别的运行和跳过按钮 */}
+                      {!isExecuted && !isExecuting && !isSkipped && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setSkippedTools(prev => new Set(prev).add(tool.id));
+                              setExecutedTools(prev => new Set(prev).add(tool.id));
+                            }}
+                            className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
+                              isDarkMode
+                                ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-300 border border-gray-600'
+                                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800 border border-gray-300'
+                            }`}
+                          >
+                            <SkipForward className="w-3 h-3" />
+                            跳过
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (onExecuteSingle) {
+                                console.log(`🔧 Executing tool: ${tool.toolName} (${tool.id})`);
+                                setExecutingTools(prev => new Set(prev).add(tool.id));
+                                try {
+                                  await onExecuteSingle(tool);
+                                  // 工具执行完成后，标记为已执行
+                                  console.log(`🔧 Tool execution completed: ${tool.id}`);
+                                  setExecutedTools(prev => {
+                                    const newSet = new Set(prev).add(tool.id);
+                                    console.log('🔧 Updated executed tools:', Array.from(newSet));
+                                    return newSet;
+                                  });
+                                  setExecutingTools(prev => {
+                                    const newSet = new Set(prev);
+                                    newSet.delete(tool.id);
+                                    return newSet;
+                                  });
+                                } catch (error) {
+                                  console.error('Tool execution failed:', error);
+                                  // 即使失败也标记为已执行（已处理）
+                                  setExecutedTools(prev => {
+                                    const newSet = new Set(prev).add(tool.id);
+                                    console.log('🔧 Updated executed tools (after error):', Array.from(newSet));
+                                    return newSet;
+                                  });
+                                  setExecutingTools(prev => {
+                                    const newSet = new Set(prev);
+                                    newSet.delete(tool.id);
+                                    return newSet;
+                                  });
+                                }
+                              }
+                            }}
+                            className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
+                              isDarkMode
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-blue-500 text-white hover:bg-blue-600'
+                            }`}
+                          >
+                            <Play className="w-3 h-3" />
+                            运行
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  {isCurrent && !isExecuted && !isExecuting && !allToolsCompleted && (
-                    <>
-                      <button
-                        onClick={handleSkipCurrent}
-                        className={`px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1.5 ${
-                          isDarkMode
-                            ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-300 border border-gray-600'
-                            : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800 border border-gray-300'
-                        }`}
-                      >
-                        <SkipForward className="w-3 h-3" />
-                        跳过
-                      </button>
-                      <button
-                        onClick={handleExecuteCurrent}
-                        className={`px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1.5 ${
-                          isDarkMode
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
-                        }`}
-                      >
-                        <Play className="w-3 h-3" />
-                        执行
-                      </button>
-                    </>
-                  )}
-                  
                   <button
                     onClick={() => toggleToolExpansion(tool.id)}
                     className={`p-1 rounded transition-colors ${
@@ -431,6 +518,7 @@ export default function InlineToolCallConfirmation({
                         ? 'hover:bg-gray-700 text-gray-400' 
                         : 'hover:bg-gray-200 text-gray-600'
                     }`}
+                    title={isExpanded ? '收起详情' : '展开详情'}
                   >
                     {isExpanded ? (
                       <ChevronUp className="w-4 h-4" />
@@ -457,7 +545,11 @@ export default function InlineToolCallConfirmation({
                         ? 'bg-gray-800 text-gray-300' 
                         : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {formatArguments(tool.arguments)}
+                      {(() => {
+                        const args = tool.input || tool.args || tool.arguments;
+                        console.log(`🔧 Tool ${tool.toolName} arguments:`, args);
+                        return formatArguments(args || {});
+                      })()}
                     </pre>
                     
                     {/* 显示执行结果 */}
@@ -492,28 +584,131 @@ export default function InlineToolCallConfirmation({
       </div>
 
       {/* Actions */}
-      <div className={`flex items-center justify-between p-3 ${
+      <div className={`flex items-center justify-between p-4 ${
         isDarkMode ? 'border-gray-700' : 'border-gray-200'
       } border-t`}>
         <div className="flex items-center gap-2">
-          {/* 可以在这里添加其他操作按钮 */}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {/* 手动完成按钮 - 当自动完成关闭或需要手动控制时显示 */}
-          {(!autoCompleteEnabled || allToolsExecuted) && (
+          {/* 执行所有工具按钮 */}
+          {executedCount < totalCount && (
             <button
-              onClick={() => onConfirm(toolCalls)}
-              className={`px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1.5 ${
-                isDarkMode
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-green-500 text-white hover:bg-green-600'
+              onClick={async () => {
+                // 执行所有未执行的工具
+                const toolsToExecute = toolCalls.filter(tool => 
+                  !executedTools.has(tool.id) && !executingTools.has(tool.id)
+                );
+                
+                if (onExecuteSingle) {
+                  // 标记所有工具为正在执行
+                  setExecutingTools(prev => {
+                    const newSet = new Set(prev);
+                    toolsToExecute.forEach(tool => newSet.add(tool.id));
+                    return newSet;
+                  });
+                  
+                  // 并行执行所有工具
+                  const executionPromises = toolsToExecute.map(async (tool) => {
+                    try {
+                      await onExecuteSingle(tool);
+                      return { toolId: tool.id, success: true };
+                    } catch (error) {
+                      console.error(`Tool ${tool.toolName} execution failed:`, error);
+                      return { toolId: tool.id, success: false };
+                    }
+                  });
+                  
+                  // 等待所有工具执行完成
+                  const results = await Promise.all(executionPromises);
+                  
+                  // 更新状态
+                  setExecutedTools(prev => {
+                    const newSet = new Set(prev);
+                    results.forEach(result => newSet.add(result.toolId));
+                    return newSet;
+                  });
+                  
+                  setExecutingTools(prev => {
+                    const newSet = new Set(prev);
+                    results.forEach(result => newSet.delete(result.toolId));
+                    return newSet;
+                  });
+                }
+              }}
+              disabled={executingTools.size > 0}
+              className={`px-4 py-2 text-sm rounded-md transition-colors flex items-center gap-2 font-medium ${
+                executingTools.size > 0
+                  ? isDarkMode
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
               }`}
             >
-              <Check className="w-3 h-3" />
-              完成
+              <Play className="w-4 h-4" />
+              {executingTools.size > 0 ? '执行中...' : '执行所有工具'}
             </button>
           )}
+          
+          {/* 跳过所有工具按钮 */}
+          {executedCount < totalCount && (
+            <button
+              onClick={() => {
+                // 跳过所有未执行的工具
+                toolCalls.forEach(tool => {
+                  if (!executedTools.has(tool.id) && !executingTools.has(tool.id)) {
+                    setSkippedTools(prev => new Set(prev).add(tool.id));
+                    setExecutedTools(prev => new Set(prev).add(tool.id));
+                  }
+                });
+              }}
+              disabled={executingTools.size > 0}
+              className={`px-3 py-2 text-sm rounded-md transition-colors flex items-center gap-2 ${
+                executingTools.size > 0
+                  ? isDarkMode
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-300 border border-gray-600'
+                    : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800 border border-gray-300'
+              }`}
+            >
+              <SkipForward className="w-4 h-4" />
+              跳过所有
+            </button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* 取消按钮 */}
+          <button
+            onClick={handleCancel}
+            className={`px-4 py-2 text-sm rounded-md transition-colors flex items-center gap-2 font-medium ${
+              isDarkMode
+                ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-300 border border-gray-600'
+                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800 border border-gray-300'
+            }`}
+          >
+            <X className="w-4 h-4" />
+            取消
+          </button>
+          
+          {/* 确定按钮 */}
+          <button
+            onClick={() => onConfirm(toolCalls, true)} // 手动确定时发送给LLM
+            disabled={executedCount === 0}
+            className={`px-4 py-2 text-sm rounded-md transition-colors flex items-center gap-2 font-medium ${
+              executedCount === 0
+                ? isDarkMode
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : isDarkMode
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+            }`}
+          >
+            <Check className="w-4 h-4" />
+            确定
+          </button>
         </div>
       </div>
     </div>

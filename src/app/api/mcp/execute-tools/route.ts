@@ -36,35 +36,56 @@ export async function POST(request: NextRequest) {
         
         let result;
         
-        // 解析工具名称，提取服务器名称和工具名称
-        const [serverName, actualToolName] = parseToolName(toolName);
-        console.log(`🔧 解析结果 - 服务器名: ${serverName}, 工具名: ${actualToolName}`);
+        // 在所有连接的服务器中查找并执行工具
+        console.log(`🔧 在所有服务器中查找工具: ${toolName}`);
+        let toolFound = false;
         
-        if (serverName) {
-          // 确保服务器连接
-          console.log(`🔧 检查服务器 ${serverName} 连接状态...`);
+        // 获取所有启用的工具
+        let toolsByServer = serverMCPServerManager.getAllEnabledTools();
+        console.log(`🔧 getAllEnabledTools 返回:`, JSON.stringify(toolsByServer, null, 2));
+        console.log(`🔧 查找工具名称: ${toolName}`);
+        
+        // 如果没有连接的工具，尝试连接所有服务器
+        if (Object.keys(toolsByServer).length === 0) {
+          console.log('🔧 没有连接的工具，尝试连接所有服务器...');
           const servers = serverMCPServerManager.getAllServers();
-          const targetServer = servers.find(s => s.name === serverName);
           
-          if (!targetServer) {
-            throw new Error(`Server ${serverName} not found in configuration`);
+          for (const server of servers) {
+            try {
+              console.log(`🔧 尝试连接服务器: ${server.name}`);
+              await serverMCPServerManager.connectServer(server.id);
+              console.log(`🔧 成功连接服务器: ${server.name}`);
+            } catch (error) {
+              console.error(`🔧 连接服务器 ${server.name} 失败:`, error);
+            }
           }
           
-          // 尝试连接服务器
-          try {
-            await serverMCPServerManager.connectServer(targetServer.id);
-            console.log(`🔧 服务器 ${serverName} 连接成功`);
-          } catch (connectError) {
-            console.log(`🔧 服务器 ${serverName} 连接失败:`, connectError);
-            // 继续尝试执行工具，可能已经连接了
+          // 重新获取工具数据
+          toolsByServer = serverMCPServerManager.getAllEnabledTools();
+          console.log(`🔧 重新获取工具数据:`, JSON.stringify(toolsByServer, null, 2));
+        }
+        
+        // 在所有服务器中查找工具
+        for (const [serverName, serverTools] of Object.entries(toolsByServer)) {
+          console.log(`🔧 检查服务器 ${serverName} 的工具:`, Object.keys(serverTools));
+          console.log(`🔧 工具 ${toolName} 是否在 ${serverName} 中:`, toolName in serverTools);
+          if (serverTools[toolName]) {
+            console.log(`🔧 在服务器 ${serverName} 中找到工具: ${toolName}`);
+            try {
+              result = await serverMCPServerManager.executeTool(serverName, toolName, toolArguments);
+              console.log(`🔧 工具执行成功:`, result);
+              toolFound = true;
+              break;
+            } catch (error) {
+              console.log(`🔧 在服务器 ${serverName} 中执行工具失败:`, error);
+              // 继续尝试其他服务器
+            }
           }
-          
-          // 使用 serverMCPServerManager 执行工具
-          const fullToolName = `${serverName}_${actualToolName}`;
-          console.log(`🔧 完整工具名: ${fullToolName}`);
-          result = await serverMCPServerManager.executeTool(fullToolName, toolArguments);
-        } else {
-          // 处理系统工具或未识别的工具
+        }
+        
+        // 如果没有找到工具，尝试系统工具
+        if (!toolFound) {
+          console.log(`🔧 工具 ${toolName} 未在任何服务器中找到，尝试系统工具`);
           result = await executeSystemTool(toolCall);
         }
         
@@ -118,14 +139,15 @@ function parseToolName(fullToolName: string): [string | null, string] {
 // 执行系统工具
 async function executeSystemTool(toolCall: any): Promise<any> {
   // 只处理真正的系统工具，不提供 mock 数据
-  switch (toolCall.name) {
+  const toolName = toolCall.name || toolCall.toolName;
+  switch (toolName) {
     case 'system:getCurrentTime':
       return {
         currentTime: new Date().toISOString(),
         timezone: 'UTC'
       };
     default:
-      throw new Error(`Unknown system tool: ${toolCall.name}`);
+      throw new Error(`Unknown system tool: ${toolName}`);
   }
 }
 

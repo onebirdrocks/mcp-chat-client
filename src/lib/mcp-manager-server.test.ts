@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ServerMCPServerManager } from './mcp-manager-server';
 
-// Mock AI SDK
-vi.mock('ai', () => ({
-  experimental_createMCPClient: vi.fn(),
-  jsonSchema: vi.fn((schema) => schema),
-}));
-
-vi.mock('ai/mcp-stdio', () => ({
-  Experimental_StdioMCPTransport: vi.fn(),
+// Mock DirectMCPClient
+vi.mock('./mcp-client-direct', () => ({
+  DirectMCPClient: vi.fn().mockImplementation(() => ({
+    connect: vi.fn(),
+    listTools: vi.fn(),
+    callTool: vi.fn(),
+    close: vi.fn(),
+  })),
 }));
 
 describe('ServerMCPServerManager', () => {
@@ -446,10 +446,10 @@ describe('ServerMCPServerManager', () => {
        clientsMap.set('test-server', mockClientWrapper);
        (manager as any).clients = clientsMap;
 
-       const metadata = manager.getToolMetadata('test-server_tool1');
+       const metadata = manager.getToolMetadata('tool1');
 
        expect(metadata).toEqual({
-         toolName: 'test-server_tool1',
+         toolName: 'tool1',
          serverName: 'test-server',
          description: 'Test tool 1',
          inputSchema: { type: 'object', properties: { param1: { type: 'string' } } },

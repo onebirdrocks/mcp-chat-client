@@ -1,81 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateText, streamText } from 'ai';
 import { serverMCPServerManager } from '@/lib/mcp-manager-server';
-import { z } from 'zod';
 
-// 将JSON Schema转换为zod schema的辅助函数
-function jsonSchemaToZod(schema: any): z.ZodType<any> {
-  if (schema.type === 'object') {
-    const shape: Record<string, z.ZodType<any>> = {};
-    
-    if (schema.properties) {
-      for (const [key, prop] of Object.entries(schema.properties)) {
-        const propSchema = prop as any;
-        if (propSchema.type === 'string') {
-          shape[key] = z.string();
-        } else if (propSchema.type === 'integer') {
-          shape[key] = z.number().int();
-        } else if (propSchema.type === 'number') {
-          shape[key] = z.number();
-        } else if (propSchema.type === 'boolean') {
-          shape[key] = z.boolean();
-        } else {
-          shape[key] = z.any();
-        }
-      }
-    }
-    
-    let zodSchema = z.object(shape);
-    
-    // 处理required字段
-    if (schema.required && Array.isArray(schema.required)) {
-      for (const requiredField of schema.required) {
-        if (shape[requiredField]) {
-          // zod对象默认所有字段都是可选的，所以这里不需要特殊处理
-        }
-      }
-    }
-    
-    return zodSchema;
+// 提供商配置
+const PROVIDER_CONFIGS = {
+  openai: {
+    baseURL: 'https://api.openai.com/v1',
+    apiKeyEnv: 'OPENAI_API_KEY'
+  },
+  anthropic: {
+    baseURL: 'https://api.anthropic.com/v1',
+    apiKeyEnv: 'ANTHROPIC_API_KEY'
+  },
+  openrouter: {
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKeyEnv: 'OPENROUTER_API_KEY'
+  }
+};
+
+// 获取API密钥
+function getApiKey(providerId: string): string {
+  const config = PROVIDER_CONFIGS[providerId as keyof typeof PROVIDER_CONFIGS];
+  if (!config) {
+    throw new Error(`Unsupported provider: ${providerId}`);
   }
   
-  return z.any();
+  const apiKey = process.env[config.apiKeyEnv];
+  if (!apiKey) {
+    throw new Error(`Missing API key for ${providerId}. Please set ${config.apiKeyEnv} environment variable.`);
+  }
+  
+  return apiKey;
 }
 
-// 获取模型实例
-function getModel(providerId: string, modelId: string) {
-  const { openai } = require('@ai-sdk/openai');
-  const { anthropic } = require('@ai-sdk/anthropic');
-  const { google } = require('@ai-sdk/google');
-  const { mistral } = require('@ai-sdk/mistral');
-  const { cohere } = require('@ai-sdk/cohere');
-  const { perplexity } = require('@ai-sdk/perplexity');
-  const { fireworks } = require('@ai-sdk/fireworks');
-  const { groq } = require('@ai-sdk/groq');
-  const { deepseek } = require('@ai-sdk/deepseek');
-  const { openrouter } = require('@openrouter/ai-sdk-provider');
-
-  const providers = {
-    openai: (modelId: string) => openai(modelId),
-    anthropic: (modelId: string) => anthropic(modelId),
-    google: (modelId: string) => google(modelId),
-    mistral: (modelId: string) => mistral(modelId),
-    cohere: (modelId: string) => cohere(modelId),
-    perplexity: (modelId: string) => perplexity(modelId),
-    fireworks: (modelId: string) => fireworks(modelId),
-    groq: (modelId: string) => groq(modelId),
-    deepseek: (modelId: string) => deepseek(modelId),
-    openrouter: (modelId: string) => openrouter(modelId)
+// 构建请求头
+function buildHeaders(providerId: string, apiKey: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
   };
+  
+  switch (providerId) {
+    case 'openai':
+    case 'openrouter':
+      headers['Authorization'] = `Bearer ${apiKey}`;
+      break;
+    case 'anthropic':
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      break;
+  }
+  
+  return headers;
+}
 
-  const provider = providers[providerId as keyof typeof providers];
-  return provider ? provider(modelId) : null;
+// 转换工具格式为OpenAI格式
+function convertToolsToOpenAIFormat(toolsByServer: Record<string, Record<string, any>>): any[] {
+  const tools: any[] = [];
+  
+  for (const [serverName, serverTools] of Object.entries(toolsByServer)) {
+    for (const [toolName, toolData] of Object.entries(serverTools)) {
+      tools.push({
+        type: 'function',
+        function: {
+          name: toolName,
+          description: toolData.function.description,
+          parameters: toolData.function.parameters
+        }
+      });
+    }
+  }
+  
+  return tools;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { providerId, modelId, prompt, historyMessages, stream = false } = await request.json();
+    const body = await request.json();
+    const { 
+      providerId, 
+      modelId, 
+      prompt, 
+      historyMessages = [], 
+      temperature = 0.7,
+      stream = true  // 默认启用流式响应
+    } = body;
 
+    console.log('🔧 API Request:', { providerId, modelId, prompt: prompt?.substring(0, 100) });
+
+    // 验证必需参数
     if (!providerId || !modelId || !prompt) {
       return NextResponse.json(
         { error: 'Missing required fields: providerId, modelId, prompt' },
@@ -83,129 +94,215 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取模型实例
-    const model = getModel(providerId, modelId);
-    if (!model) {
-      return NextResponse.json(
-        { error: `Model not found: ${providerId}/${modelId}` },
-        { status: 404 }
-      );
-    }
-
     // 获取工具
     let toolsByServer = serverMCPServerManager.getAllEnabledTools();
     
-    // 如果没有工具，尝试连接所有服务器
+    // 如果没有工具，尝试自动连接所有服务器
     if (Object.keys(toolsByServer).length === 0) {
-      console.log('🔧 No tools found, attempting to connect all servers...');
-      const servers = serverMCPServerManager.getAllServers();
-      
-      for (const server of servers) {
-        try {
-          console.log(`🔧 Attempting to connect to server: ${server.name}`);
-          await serverMCPServerManager.connectServer(server.id);
-          console.log(`🔧 Successfully connected to server: ${server.name}`);
-        } catch (error) {
-          console.error(`🔧 Failed to connect to server ${server.name}:`, error);
-        }
-      }
-      
-      // 重新获取工具
-      toolsByServer = serverMCPServerManager.getAllEnabledTools();
-      console.log('🔧 Tools after connecting servers:', Object.keys(toolsByServer));
-    }
-    
-    // 转换为AI SDK格式的工具
-    const toolsToUse: Record<string, any> = {};
-    
-    for (const [serverName, serverTools] of Object.entries(toolsByServer)) {
-      for (const [toolName, toolData] of Object.entries(serverTools)) {
-        const functionData = toolData.function;
-        
-        // 使用 serverName_toolName 作为工具的唯一标识符
-        const fullToolName = `${serverName}_${toolName}`;
-        
-        // 使用直接的JSON Schema定义工具
-        toolsToUse[fullToolName] = {
-          description: functionData.description,
-          inputSchema: functionData.parameters, // 直接使用JSON Schema
-          execute: async (args: any) => {
-            console.log(`🔧 Executing tool ${fullToolName} with args:`, args);
-            return await serverMCPServerManager.executeTool(fullToolName, args);
-          }
-        };
+      console.log('🔧 No tools found, attempting to auto-connect servers...');
+      try {
+        await serverMCPServerManager.autoConnectAllServers();
+        toolsByServer = serverMCPServerManager.getAllEnabledTools();
+        console.log('🔧 Tools after auto-connecting servers:', Object.keys(toolsByServer));
+      } catch (error) {
+        console.error('🔧 Auto-connect failed:', error);
       }
     }
-    
-    console.log('🔧 Tools converted to AI SDK v5 format:', Object.keys(toolsToUse));
-    console.log('🔧 Using tools count:', Object.keys(toolsToUse).length);
-    
-    // 检查工具格式是否正确
-    if (Object.keys(toolsToUse).length > 0) {
-      const firstToolName = Object.keys(toolsToUse)[0];
-      console.log('🔧 First tool format:', firstToolName);
-      console.log('🔧 Sample tool structure:', toolsToUse[firstToolName]);
-      
-      // 检查所有工具
-      for (const [toolName, toolData] of Object.entries(toolsToUse)) {
-        console.log(`🔧 Tool ${toolName}:`, toolData);
-      }
-    }
-    console.log('🔧 ==========================================');
-    console.log('🔧 TOOLS DEBUG INFO END');
-    console.log('🔧 ==========================================');
+
+    // 转换工具格式
+    const tools = convertToolsToOpenAIFormat(toolsByServer);
+    console.log('🔧 Converted tools count:', tools.length);
 
     // 构建消息数组
     const messages: any[] = [];
     
     if (historyMessages && Array.isArray(historyMessages)) {
-      messages.push(...historyMessages);
+      for (const msg of historyMessages) {
+        if (msg.role && msg.content && typeof msg.content === 'string') {
+          messages.push({
+            role: msg.role,
+            content: msg.content
+          });
+        }
+      }
     }
     
     messages.push({ 
-      role: 'user' as const, 
+      role: 'user', 
       content: prompt 
     });
 
+    // 获取API配置
+    const config = PROVIDER_CONFIGS[providerId as keyof typeof PROVIDER_CONFIGS];
+    if (!config) {
+      return NextResponse.json(
+        { error: `Unsupported provider: ${providerId}` },
+        { status: 400 }
+      );
+    }
+
+    const apiKey = getApiKey(providerId);
+    const headers = buildHeaders(providerId, apiKey);
+
+    // 构建请求体
+    const requestBody: any = {
+      model: modelId,
+      messages,
+      temperature,
+      stream
+    };
+
+    // 只有在有工具时才添加tools字段
+    if (tools.length > 0) {
+      requestBody.tools = tools;
+      requestBody.tool_choice = 'auto';
+    }
+
+    console.log('🔧 Request to LLM:', {
+      url: `${config.baseURL}/chat/completions`,
+      model: modelId,
+      messagesCount: messages.length,
+      toolsCount: tools.length,
+      stream
+    });
+
+    // 发送请求到LLM API
+    const response = await fetch(`${config.baseURL}/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🔧 LLM API Error:', response.status, errorText);
+      return NextResponse.json(
+        { error: `LLM API Error: ${response.status} ${errorText}` },
+        { status: response.status }
+      );
+    }
+
     if (stream) {
-                        // 流式响应
-                  console.log('🔧 Final tools format before AI SDK call (streaming):', Object.keys(toolsToUse));
-                  
-                  // 构建请求体用于日志
-                  const requestBody = {
-                    model: model.modelId,
-                    messages,
-                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
-                    temperature: 0.7
-                  };
-                  
-                  console.log('🔧 Request body to LLM (streaming):', JSON.stringify(requestBody, null, 2));
-                  
-                  const result = await streamText({
-                    model,
-                    messages,
-                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
-                    temperature: 0.7
-                  });
-      
+      // 流式响应
       const encoder = new TextEncoder();
-      const stream = new ReadableStream({
+      
+      const readableStream = new ReadableStream({
         async start(controller) {
           try {
-            // 处理文本流
-            for await (const chunk of result.textStream) {
-              const data = JSON.stringify({ content: chunk });
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            const reader = response.body?.getReader();
+            if (!reader) {
+              throw new Error('No response body');
             }
+
+            const decoder = new TextDecoder();
+            let buffer = '';
             
-            // AI-SDK会自动处理有execute函数的工具调用
-            // 不需要手动处理工具调用
-            
-            // 发送完成信号
-            controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+            // 用于累积工具调用参数
+            const toolCallsBuffer: Record<string, {
+              id: string;
+              name: string;
+              arguments: string;
+            }> = {};
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') {
+                    controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+                    continue;
+                  }
+
+                  try {
+                    const parsed = JSON.parse(data);
+                    
+                    // 检查是否有工具调用
+                    if (parsed.choices?.[0]?.delta?.tool_calls) {
+                      const toolCalls = parsed.choices[0].delta.tool_calls;
+                      
+                      for (const toolCall of toolCalls) {
+                        const index = toolCall.index;
+                        
+                        // 初始化工具调用缓冲区
+                        if (!toolCallsBuffer[index]) {
+                          toolCallsBuffer[index] = {
+                            id: toolCall.id || '',
+                            name: toolCall.function?.name || '',
+                            arguments: ''
+                          };
+                        }
+                        
+                        // 累积参数
+                        if (toolCall.function?.arguments) {
+                          toolCallsBuffer[index].arguments += toolCall.function.arguments;
+                        }
+                        
+                        // 更新ID和名称（如果有的话）
+                        if (toolCall.id) {
+                          toolCallsBuffer[index].id = toolCall.id;
+                        }
+                        if (toolCall.function?.name) {
+                          toolCallsBuffer[index].name = toolCall.function.name;
+                        }
+                      }
+                    }
+                    
+                    // 检查是否工具调用完成
+                    if (parsed.choices?.[0]?.finish_reason === 'tool_calls') {
+                      // 处理完整的工具调用
+                      const enhancedToolCalls = Object.values(toolCallsBuffer).map((toolCall) => {
+                        // 找到对应的服务器
+                        let serverName = '';
+                        for (const [sName, serverTools] of Object.entries(toolsByServer)) {
+                          if (serverTools[toolCall.name]) {
+                            serverName = sName;
+                            break;
+                          }
+                        }
+
+                        let parsedArgs = {};
+                        try {
+                          if (toolCall.arguments) {
+                            parsedArgs = JSON.parse(toolCall.arguments);
+                          }
+                        } catch (error) {
+                          console.error('🔧 Error parsing tool arguments:', error, 'Arguments:', toolCall.arguments);
+                        }
+
+                        return {
+                          toolCallId: toolCall.id,
+                          toolName: toolCall.name,
+                          args: parsedArgs,
+                          serverName,
+                          id: toolCall.id,
+                          input: parsedArgs
+                        };
+                      });
+
+                      const toolCallsData = JSON.stringify({ toolCalls: enhancedToolCalls });
+                      controller.enqueue(encoder.encode(`data: ${toolCallsData}\n\n`));
+                    }
+
+                    // 转发原始数据
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                  } catch (parseError) {
+                    console.error('🔧 Error parsing streaming data:', parseError);
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                  }
+                }
+              }
+            }
+
             controller.close();
           } catch (error) {
-            console.error('Error in stream:', error);
+            console.error('🔧 Streaming error:', error);
             const errorData = JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' });
             controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
             controller.close();
@@ -213,58 +310,58 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      return new Response(stream, {
+      return new Response(readableStream, {
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
           'Connection': 'keep-alive',
         },
       });
     } else {
-      // 非流式响应 - 使用streamText然后收集结果
-      console.log('🔧 About to call streamText with tools:', Object.keys(toolsToUse));
+      // 非流式响应
+      const data = await response.json();
       
-                        // 使用工具调用
-                  console.log('🔧 Final tools format before AI SDK call:', Object.keys(toolsToUse));
-                  
-                  // 构建请求体用于日志
-                  const requestBody = {
-                    model: model.modelId,
-                    messages,
-                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
-                    temperature: 0.7
-                  };
-                  
-                  console.log('🔧 Request body to LLM (non-streaming):', JSON.stringify(requestBody, null, 2));
-                  
-                  const result = await streamText({
-                    model,
-                    messages,
-                    tools: Object.keys(toolsToUse).length > 0 ? toolsToUse : undefined,
-                    temperature: 0.7
-                  });
-      
-      // 收集文本内容
-      let textContent = '';
-      for await (const chunk of result.textStream) {
-        textContent += chunk;
+      // 检查是否有工具调用
+      if (data.choices?.[0]?.message?.tool_calls) {
+        const toolCalls = data.choices[0].message.tool_calls;
+        
+        // 转换工具调用格式
+        const enhancedToolCalls = toolCalls.map((toolCall: any) => {
+          // 找到对应的服务器
+          let serverName = '';
+          for (const [sName, serverTools] of Object.entries(toolsByServer)) {
+            if (serverTools[toolCall.function?.name]) {
+              serverName = sName;
+              break;
+            }
+          }
+
+          return {
+            toolCallId: toolCall.id,
+            toolName: toolCall.function?.name,
+            args: toolCall.function?.arguments ? JSON.parse(toolCall.function.arguments) : {},
+            serverName,
+            id: toolCall.id,
+            input: toolCall.function?.arguments ? JSON.parse(toolCall.function.arguments) : {}
+          };
+        });
+
+        return NextResponse.json({
+          ...data,
+          toolCalls: enhancedToolCalls
+        });
       }
-      
-      // AI-SDK会自动处理工具调用，直接返回文本内容
-      return NextResponse.json({
-        success: true,
-        result: {
-          text: textContent,
-          toolCalls: [],
-          toolResults: []
-        }
-      });
+
+      return NextResponse.json(data);
     }
 
   } catch (error) {
-    console.error('Error in simplified AI SDK tool call:', error);
+    console.error('🔧 API Error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
