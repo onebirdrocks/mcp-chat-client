@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
       prompt, 
       historyMessages = [], 
       temperature = 0.7,
-      stream = true  // 默认启用流式响应
+      useTools = true  // 默认使用工具
     } = body;
 
-    console.log('🔧 API Request:', { providerId, modelId, prompt: prompt?.substring(0, 100) });
+    console.log('🔧 API Request:', { providerId, modelId, prompt: prompt?.substring(0, 100), useTools });
 
     // 验证必需参数
     if (!providerId || !modelId || !prompt) {
@@ -94,24 +94,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取工具
-    let toolsByServer = serverMCPServerManager.getAllEnabledTools();
+    // 获取工具（只有在useTools为true时才获取）
+    let toolsByServer: Record<string, Record<string, any>> = {};
+    let tools: any[] = [];
     
-    // 如果没有工具，尝试自动连接所有服务器
-    if (Object.keys(toolsByServer).length === 0) {
-      console.log('🔧 No tools found, attempting to auto-connect servers...');
-      try {
-        await serverMCPServerManager.autoConnectAllServers();
-        toolsByServer = serverMCPServerManager.getAllEnabledTools();
-        console.log('🔧 Tools after auto-connecting servers:', Object.keys(toolsByServer));
-      } catch (error) {
-        console.error('🔧 Auto-connect failed:', error);
+    if (useTools) {
+      toolsByServer = serverMCPServerManager.getAllEnabledTools();
+      
+      // 如果没有工具，尝试自动连接所有服务器
+      if (Object.keys(toolsByServer).length === 0) {
+        console.log('🔧 No tools found, attempting to auto-connect servers...');
+        try {
+          await serverMCPServerManager.autoConnectAllServers();
+          toolsByServer = serverMCPServerManager.getAllEnabledTools();
+          console.log('🔧 Tools after auto-connecting servers:', Object.keys(toolsByServer));
+        } catch (error) {
+          console.error('🔧 Auto-connect failed:', error);
+        }
       }
-    }
 
-    // 转换工具格式
-    const tools = convertToolsToOpenAIFormat(toolsByServer);
-    console.log('🔧 Converted tools count:', tools.length);
+      // 转换工具格式
+      tools = convertToolsToOpenAIFormat(toolsByServer);
+      console.log('🔧 Converted tools count:', tools.length);
+      console.log('🔧 Tool definitions:', JSON.stringify(tools, null, 2));
+    } else {
+      console.log('🔧 Skipping tools as useTools is false');
+    }
 
     // 构建消息数组
     const messages: any[] = [];
@@ -149,7 +157,7 @@ export async function POST(request: NextRequest) {
       model: modelId,
       messages,
       temperature,
-      stream
+      stream: true // 强制使用流式响应
     };
 
     // 只有在有工具时才添加tools字段
@@ -163,26 +171,26 @@ export async function POST(request: NextRequest) {
       model: modelId,
       messagesCount: messages.length,
       toolsCount: tools.length,
-      stream
+      stream: true
     });
 
     // 发送请求到LLM API
-    const response = await fetch(`${config.baseURL}/chat/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody)
-    });
+    try {
+      const response = await fetch(`${config.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔧 LLM API Error:', response.status, errorText);
-      return NextResponse.json(
-        { error: `LLM API Error: ${response.status} ${errorText}` },
-        { status: response.status }
-      );
-    }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔧 LLM API Error:', response.status, errorText);
+        return NextResponse.json(
+          { error: `LLM API Error: ${response.status} ${errorText}` },
+          { status: response.status }
+        );
+      }
 
-    if (stream) {
       // 流式响应
       const encoder = new TextEncoder();
       
@@ -197,7 +205,7 @@ export async function POST(request: NextRequest) {
             const decoder = new TextDecoder();
             let buffer = '';
             
-            // 用于累积工具调用参数
+            // 用于累积工具调用参数（只有在useTools为true时才需要）
             const toolCallsBuffer: Record<string, {
               id: string;
               name: string;
@@ -222,6 +230,12 @@ export async function POST(request: NextRequest) {
 
                   try {
                     const parsed = JSON.parse(data);
+                    
+                    // 如果useTools为false，直接转发OpenAI格式的响应
+                    if (!useTools) {
+                      controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                      continue;
+                    }
                     
                     // 检查是否有工具调用
                     if (parsed.choices?.[0]?.delta?.tool_calls) {
@@ -287,14 +301,14 @@ export async function POST(request: NextRequest) {
                       });
 
                       const toolCallsData = JSON.stringify({ toolCalls: enhancedToolCalls });
+                      console.log('🔧 发送工具调用数据:', toolCallsData);
                       controller.enqueue(encoder.encode(`data: ${toolCallsData}\n\n`));
+                    } else if (parsed.choices?.[0]?.delta?.content) {
+                      // 转发内容
+                      controller.enqueue(encoder.encode(`data: ${data}\n\n`));
                     }
-
-                    // 转发原始数据
-                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
                   } catch (parseError) {
-                    console.error('🔧 Error parsing streaming data:', parseError);
-                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                    console.warn('Failed to parse stream data:', data);
                   }
                 }
               }
@@ -317,42 +331,15 @@ export async function POST(request: NextRequest) {
           'Connection': 'keep-alive',
         },
       });
-    } else {
-      // 非流式响应
-      const data = await response.json();
-      
-      // 检查是否有工具调用
-      if (data.choices?.[0]?.message?.tool_calls) {
-        const toolCalls = data.choices[0].message.tool_calls;
-        
-        // 转换工具调用格式
-        const enhancedToolCalls = toolCalls.map((toolCall: any) => {
-          // 找到对应的服务器
-          let serverName = '';
-          for (const [sName, serverTools] of Object.entries(toolsByServer)) {
-            if (serverTools[toolCall.function?.name]) {
-              serverName = sName;
-              break;
-            }
-          }
-
-          return {
-            toolCallId: toolCall.id,
-            toolName: toolCall.function?.name,
-            args: toolCall.function?.arguments ? JSON.parse(toolCall.function.arguments) : {},
-            serverName,
-            id: toolCall.id,
-            input: toolCall.function?.arguments ? JSON.parse(toolCall.function.arguments) : {}
-          };
-        });
-
-        return NextResponse.json({
-          ...data,
-          toolCalls: enhancedToolCalls
-        });
-      }
-
-      return NextResponse.json(data);
+    } catch (fetchError) {
+      console.error('🔧 Fetch error:', fetchError);
+      return NextResponse.json(
+        { 
+          error: `Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`,
+          details: fetchError instanceof Error ? fetchError.stack : undefined
+        },
+        { status: 500 }
+      );
     }
 
   } catch (error) {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Play, Check, X, Clock, AlertTriangle, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
-import { ToolCall, ToolCallResult } from '@/lib/tool-call-client';
+import { ToolCall, ToolCallResult } from '@/lib/tool-call-client-simplified';
 
 interface ToolCallStatusProps {
   toolCalls?: ToolCall[];

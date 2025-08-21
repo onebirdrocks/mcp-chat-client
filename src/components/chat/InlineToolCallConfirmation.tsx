@@ -321,7 +321,10 @@ export default function InlineToolCallConfirmation({
               isWaitingForLLM ? '执行成功，等待AI处理' : '执行成功'
             ) : '等待执行';
           
-          console.log(`🔍 工具 ${index + 1} (${tool.name}) 状态:`, {
+          // 提取工具名称，支持多种格式
+          const toolName = tool.toolName || tool.id || '未知工具';
+          
+          console.log(`🔍 工具 ${index + 1} (${toolName}) 状态:`, {
             isCurrent,
             isExecuted,
             isExecuting,
@@ -420,7 +423,7 @@ export default function InlineToolCallConfirmation({
                           <span className={`text-sm font-medium ${
                             isDarkMode ? 'text-white' : 'text-gray-900'
                           }`}>
-                            {tool.toolName}
+                            {toolName}
                           </span>
                           {tool.serverName && (
                             <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -463,7 +466,7 @@ export default function InlineToolCallConfirmation({
                           <button
                             onClick={async () => {
                               if (onExecuteSingle) {
-                                console.log(`🔧 Executing tool: ${tool.toolName} (${tool.id})`);
+                                console.log(`🔧 Executing tool: ${toolName} (${tool.id})`);
                                 setExecutingTools(prev => new Set(prev).add(tool.id));
                                 try {
                                   await onExecuteSingle(tool);
@@ -546,8 +549,8 @@ export default function InlineToolCallConfirmation({
                         : 'bg-gray-100 text-gray-700'
                     }`}>
                       {(() => {
-                        const args = tool.input || tool.args || tool.arguments;
-                        console.log(`🔧 Tool ${tool.toolName} arguments:`, args);
+                        const args = tool.input;
+                        console.log(`🔧 Tool ${toolName} arguments:`, args);
                         return formatArguments(args || {});
                       })()}
                     </pre>

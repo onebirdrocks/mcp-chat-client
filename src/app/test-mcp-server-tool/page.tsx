@@ -262,6 +262,10 @@ export default function TestMCPServerToolPage() {
   const [currentToolCalls, setCurrentToolCalls] = useState<ToolCall[]>([]);
   const [currentToolResults, setCurrentToolResults] = useState<ToolCallResult[]>([]);
   const [currentToolStatus, setCurrentToolStatus] = useState<'pending' | 'executing' | 'completed' | 'failed' | 'cancelled'>('pending');
+  const [pendingToolCallConfirmation, setPendingToolCallConfirmation] = useState<{
+    resolve: (confirmed: boolean) => void;
+    toolCalls: ToolCall[];
+  } | null>(null);
 
   // 加载MCP服务器和工具
   useEffect(() => {
@@ -659,8 +663,8 @@ export default function TestMCPServerToolPage() {
     }
   };
 
-  // 持续对话循环处理
-  const handleStartConversationLoop = async () => {
+  // 发送消息
+  const handleSendMessage = async () => {
     if (!message.trim() || !selectedProvider || !selectedModel) {
       return;
     }
@@ -677,6 +681,7 @@ export default function TestMCPServerToolPage() {
     setIsLoading(true);
 
     try {
+      // 使用startConversationLoop来自动处理MCP工具调用
       await simplifiedToolCallClient.startConversationLoop(
         selectedProvider,
         selectedModel,
@@ -693,24 +698,82 @@ export default function TestMCPServerToolPage() {
         },
         // onToolCallsDetected - 请求用户确认工具调用
         async (toolCalls: any[]) => {
+          console.log('🔧 工具调用确认 - 原始数据:', JSON.stringify(toolCalls, null, 2));
+          
+          // 创建包含工具调用的助手消息
+          const assistantMessage: Message = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: 'AI想要执行以下工具调用，请确认是否执行：',
+            timestamp: new Date(),
+            toolCalls: toolCalls,
+            toolStatus: 'pending'
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+          
+          // 等待用户通过InlineToolCallConfirmation确认
           return new Promise((resolve) => {
-            // 显示工具调用确认对话框
-            const confirmed = window.confirm(
-              `AI想要执行 ${toolCalls.length} 个工具调用:\n\n` +
-              toolCalls.map(tc => `• ${tc.toolName}: ${JSON.stringify(tc.input)}`).join('\n') +
-              '\n\n是否允许执行？'
-            );
-            resolve(confirmed);
+            // 设置待确认的工具调用
+            setPendingToolCallConfirmation({
+              resolve,
+              toolCalls
+            });
           });
         },
         // onToolResults - 处理工具执行结果
         (results: any[]) => {
+          const successfulResults = results.filter(r => r.success);
+          const failedResults = results.filter(r => !r.success);
+          
+          let resultMessage = '';
+          if (successfulResults.length > 0) {
+            resultMessage += `✅ 成功执行 ${successfulResults.length} 个工具:\n\n`;
+            successfulResults.forEach(r => {
+              const toolName = r.toolName || r.toolCallId || '未知工具';
+              resultMessage += `**${toolName}** 执行结果:\n`;
+              
+              // 显示实际的工具执行结果
+              if (r.result) {
+                try {
+                  if (typeof r.result === 'object' && r.result !== null) {
+                    if (r.result.content && Array.isArray(r.result.content)) {
+                      // MCP工具返回格式
+                      const content = r.result.content.map((item: any) => item.text || item).join('\n');
+                      resultMessage += `${content}\n`;
+                    } else if (r.result.structuredContent && r.result.structuredContent.result) {
+                      // 结构化内容
+                      const content = Array.isArray(r.result.structuredContent.result) 
+                        ? r.result.structuredContent.result.join('\n')
+                        : JSON.stringify(r.result.structuredContent.result, null, 2);
+                      resultMessage += `${content}\n`;
+                    } else {
+                      resultMessage += `${JSON.stringify(r.result, null, 2)}\n`;
+                    }
+                  } else {
+                    resultMessage += `${String(r.result)}\n`;
+                  }
+                } catch (error) {
+                  resultMessage += `结果格式化错误: ${error}\n`;
+                }
+              } else {
+                resultMessage += `执行成功，但无返回结果\n`;
+              }
+              resultMessage += '\n';
+            });
+          }
+          
+          if (failedResults.length > 0) {
+            resultMessage += `\n❌ 失败 ${failedResults.length} 个工具:\n`;
+            failedResults.forEach(r => {
+              const toolName = r.toolName || r.toolCallId || '未知工具';
+              resultMessage += `• ${toolName}: ${r.error || '未知错误'}\n`;
+            });
+          }
+          
           const toolResultMessage: Message = {
             id: Date.now().toString(),
             role: 'assistant',
-            content: `工具执行完成:\n${results.map(r => 
-              r.success ? `✅ ${r.toolCallId}: 成功` : `❌ ${r.toolCallId}: ${r.error}`
-            ).join('\n')}`,
+            content: resultMessage || '工具执行完成',
             timestamp: new Date(),
             toolResults: results
           };
@@ -728,11 +791,11 @@ export default function TestMCPServerToolPage() {
         }
       );
     } catch (error) {
-      console.error('持续对话失败:', error);
+      console.error('发送消息失败:', error);
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `❌ 持续对话失败: ${error instanceof Error ? error.message : String(error)}`,
+        content: `❌ 发送消息失败: ${error instanceof Error ? error.message : String(error)}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -741,129 +804,75 @@ export default function TestMCPServerToolPage() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!message.trim() || !selectedProvider || !selectedModel) {
-      return;
+  const handleToolCallsConfirmed = async (toolCalls: ToolCall[], sendToLLM: boolean = true) => {
+    console.log('🔧 工具调用已确认:', toolCalls);
+    
+    // 如果有待确认的工具调用，解析Promise
+    if (pendingToolCallConfirmation) {
+      pendingToolCallConfirmation.resolve(true);
+      setPendingToolCallConfirmation(null);
     }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: message.trim(),
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setMessage('');
-    setIsLoading(true);
-
-    // 创建一个临时的助手消息用于流式更新
-    const assistantMessageId = (Date.now() + 1).toString();
-    const initialAssistantMessage: Message = {
-      id: assistantMessageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      toolCalls: [],
-      toolResults: [],
-      toolStatus: 'pending'
-    };
-
-    setMessages(prev => [...prev, initialAssistantMessage]);
+    
+    setCurrentToolStatus('executing');
+    setCurrentToolCalls(toolCalls);
+    setCurrentToolResults([]);
 
     try {
-      // 检查可用工具
-      console.log('Available tools:', availableTools);
-      console.log('Available tools details:', availableTools.map(tool => ({
-        name: tool.toolName,
-        serverName: tool.serverName,
-        description: tool.description
-      })));
+      // 执行工具调用
+      const results = await simplifiedToolCallClient.executeToolCalls(toolCalls);
+      console.log('🔧 工具执行结果:', results);
       
-      // 检查是否有相关的电子书工具
-      const ebookTools = availableTools.filter(tool => 
-        tool.toolName.includes('get_all_') && 
-        (tool.toolName.includes('pdf') || tool.toolName.includes('epub'))
-      );
-      console.log('Ebook tools:', ebookTools);
-      console.log('Selected provider:', selectedProvider);
-      console.log('Selected model:', selectedModel);
+      setCurrentToolResults(results);
+      setCurrentToolStatus(results.some(r => !r.success) ? 'failed' : 'completed');
 
-      // 调用模型进行工具调用（启用流式响应）
-      const response = await simplifiedToolCallClient.callModelWithToolsStream(
-        selectedProvider,
-        selectedModel,
-        userMessage.content,
-        messages.map(m => ({
-          role: m.role,
-          content: m.content
-        })),
-        (chunk) => {
-          // 流式更新回调
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, content: msg.content + chunk }
-              : msg
-          ));
-        },
-        (toolCalls) => {
-          // 工具调用回调 - 现在工具不会自动执行，状态为pending
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, toolCalls, toolStatus: 'pending' }
-              : msg
-          ));
-        },
-        (toolResults) => {
-          // 工具结果回调
-          const convertedResults = toolResults.map((rawResult: any) => ({
-            toolCallId: rawResult.toolCallId,
-            success: !rawResult.output?.isError,
-            result: rawResult.output,
-            error: rawResult.output?.isError ? rawResult.output?.content?.[0]?.text : undefined
-          }));
-
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, toolResults: convertedResults, toolStatus: 'completed' }
-              : msg
-          ));
+      // 更新消息中的工具结果
+      setMessages(prev => prev.map(msg => {
+        if (msg.toolCalls && msg.toolCalls.length > 0) {
+          return { 
+            ...msg, 
+            toolResults: results,
+            toolStatus: results.some(r => !r.success) ? 'failed' : 'completed'
+          };
         }
-      );
+        return msg;
+      }));
 
-      console.log('Stream response completed:', response);
-
+      // 如果需要发送给LLM，继续对话
+      if (sendToLLM) {
+        await continueConversationWithResults(results);
+      }
     } catch (error) {
-      console.error('Failed to send message:', error);
-      setMessages(prev => prev.map(msg => 
-        msg.id === assistantMessageId 
-          ? { ...msg, content: '抱歉，发生了错误。请重试。', toolStatus: 'failed' }
-          : msg
-      ));
-    } finally {
-      setIsLoading(false);
+      console.error('🔧 工具执行失败:', error);
+      setCurrentToolStatus('failed');
+      
+      // 更新消息状态
+      setMessages(prev => prev.map(msg => {
+        if (msg.toolCalls && msg.toolCalls.length > 0) {
+          return { ...msg, toolStatus: 'failed' };
+        }
+        return msg;
+      }));
     }
   };
 
-  const handleToolCallsConfirmed = async (toolCalls: ToolCall[], sendToLLM: boolean = true) => {
-    setCurrentToolStatus('completed');
+  const handleToolCallsCancelled = () => {
+    console.log('🔧 工具调用已取消');
     
-    // 更新消息中的工具状态
-    setMessages(prev => prev.map(msg => 
-      msg.toolCalls ? { ...msg, toolStatus: 'completed' } : msg
-    ));
-
-    // 如果不需要发送给LLM，直接结束
-    if (!sendToLLM) {
-      console.log('工具执行完成，不发送结果给LLM');
-      setCurrentToolCalls([]);
-      setCurrentToolResults([]);
-      return;
+    // 如果有待确认的工具调用，解析Promise
+    if (pendingToolCallConfirmation) {
+      pendingToolCallConfirmation.resolve(false);
+      setPendingToolCallConfirmation(null);
     }
+    
+    setCurrentToolStatus('cancelled');
+    setCurrentToolCalls([]);
+    setCurrentToolResults([]);
+  };
 
+  const continueConversationWithResults = async (results: ToolCallResult[]) => {
     try {
       // 获取所有工具结果
-      const allToolResults = currentToolResults.length > 0 ? currentToolResults : 
+      const allToolResults = results.length > 0 ? results : 
         messages.flatMap(msg => msg.toolResults || []);
       
       console.log('All tool results for LLM:', allToolResults);
@@ -880,7 +889,18 @@ export default function TestMCPServerToolPage() {
         return;
       }
       
-      // 继续对话，发送结果给LLM
+      // 创建新的助手消息用于流式显示
+      const assistantMessageId = Date.now().toString();
+      const assistantMessage: Message = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // 继续对话，发送结果给LLM（使用流式响应）
       const response = await simplifiedToolCallClient.continueConversationWithToolResults(
         selectedProvider,
         selectedModel,
@@ -894,34 +914,34 @@ export default function TestMCPServerToolPage() {
 
       console.log('Continue conversation response:', response);
 
-      // 处理API返回的格式
-      const result = response.result || response;
-      const content = result.text || result.content || '工具执行完成。';
-      
-      console.log('Final content to display:', content);
-
-      const finalMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: content,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, finalMessage]);
+      // 处理流式响应
+      if (response.result && response.result.text) {
+        // 更新助手消息的内容
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: response.result.text }
+            : msg
+        ));
+      } else {
+        // 如果没有获取到内容，显示默认消息
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: '基于工具执行结果的分析已完成。' }
+            : msg
+        ));
+      }
     } catch (error) {
       console.error('Failed to continue conversation with tool results:', error);
-      setCurrentToolStatus('failed');
+      
+      // 添加错误消息
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '处理工具结果时出现错误，请重试。',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     }
-    
-    // 清理状态
-    setCurrentToolCalls([]);
-    setCurrentToolResults([]);
-  };
-
-  const handleToolCallsCancelled = () => {
-    setCurrentToolStatus('cancelled');
-    setCurrentToolCalls([]);
-    setCurrentToolResults([]);
   };
 
   const handleSingleToolExecuted = async (toolCall: ToolCall) => {
@@ -1439,21 +1459,6 @@ export default function TestMCPServerToolPage() {
             }`}
           >
             {isLoading ? '发送中...' : '发送'}
-              </button>
-              <button 
-            onClick={handleStartConversationLoop}
-            disabled={!canSendMessage || isLoading}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              canSendMessage && !isLoading
-                ? isDarkMode
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-green-500 text-white hover:bg-green-600'
-                : isDarkMode
-                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            {isLoading ? '循环中...' : '持续对话'}
               </button>
             </div>
           </div>

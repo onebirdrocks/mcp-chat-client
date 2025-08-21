@@ -83,6 +83,45 @@ export class SimplifiedToolCallClient {
     }
   }
 
+  // 调用模型但不包含工具（用于工具执行完成后的回答生成）
+  async callModelWithoutTools(
+    providerId: string,
+    modelId: string,
+    prompt: string,
+    historyMessages: any[]
+  ): Promise<any> {
+    try {
+      // 构建请求体，不包含工具信息
+      const requestBody: any = {
+        providerId,
+        modelId,
+        prompt,
+        historyMessages,
+        stream: true, // 强制使用流式响应
+        // 明确指定不使用工具
+        useTools: false
+      };
+
+      const response = await fetch('/api/ai/tool-call-simplified', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // 处理流式响应
+      return this.handleStreamResponse(response);
+    } catch (error) {
+      console.error('Failed to call model without tools:', error);
+      throw error;
+    }
+  }
+
   // 处理流式响应
   private async handleStreamResponse(response: Response): Promise<any> {
     const reader = response.body?.getReader();
@@ -282,12 +321,15 @@ export class SimplifiedToolCallClient {
     let loopCount = 0;
     const maxLoops = 10; // 防止无限循环
 
+    console.log('🚀 开始对话循环，初始提示:', initialPrompt);
+
     try {
       while (loopCount < maxLoops) {
         loopCount++;
-        console.log(`🔄 对话循环第 ${loopCount} 轮`);
+        console.log(`🔄 对话循环第 ${loopCount} 轮，当前提示:`, currentPrompt);
 
         // 调用模型
+        console.time(`🔄 第 ${loopCount} 轮模型调用`);
         const response = await this.callModelWithTools(
           providerId,
           modelId,
@@ -295,9 +337,17 @@ export class SimplifiedToolCallClient {
           conversationHistory,
           true // 使用流式响应
         );
+        console.timeEnd(`🔄 第 ${loopCount} 轮模型调用`);
+
+        console.log(`🔄 第 ${loopCount} 轮响应:`, {
+          hasText: !!response.result?.text,
+          hasToolCalls: !!response.result?.toolCalls,
+          toolCallsCount: response.result?.toolCalls?.length || 0
+        });
 
         // 处理响应
         if (response.result?.text) {
+          console.log(`🔄 第 ${loopCount} 轮文本响应:`, response.result.text.substring(0, 100) + '...');
           onMessage?.(response.result.text);
           
           // 添加助手回复到历史
@@ -311,18 +361,24 @@ export class SimplifiedToolCallClient {
         if (response.result?.toolCalls && response.result.toolCalls.length > 0) {
           const toolCalls = response.result.toolCalls;
           console.log(`🔧 检测到 ${toolCalls.length} 个工具调用`);
+          console.log('🔧 工具调用详情:', JSON.stringify(toolCalls, null, 2));
 
           // 请求用户确认
+          console.time('🔧 用户确认等待');
           const userConfirmed = await onToolCallsDetected?.(toolCalls);
+          console.timeEnd('🔧 用户确认等待');
           
           if (!userConfirmed) {
             console.log('🚫 用户取消了工具调用');
-            break;
+            return; // 直接返回，结束函数
           }
 
           // 执行工具调用
           console.log('✅ 用户确认，执行工具调用');
+          console.time('🔧 工具执行');
           const toolResults = await this.executeToolCalls(toolCalls);
+          console.timeEnd('🔧 工具执行');
+          console.log('🔧 工具执行结果:', JSON.stringify(toolResults, null, 2));
           onToolResults?.(toolResults);
 
           // 将工具结果添加到历史
@@ -348,24 +404,56 @@ export class SimplifiedToolCallClient {
             .join('\n\n');
 
           if (toolResultsText) {
+            console.log('🔧 工具执行完成，准备生成最终回答');
             conversationHistory.push({
               role: 'user',
-              content: `工具执行完成，结果如下:\n${toolResultsText}\n\n请基于这些结果继续回答或执行下一步操作。`
+              content: `工具执行完成，结果如下:\n${toolResultsText}\n\n请基于这些结果回答用户的问题，不要再次调用工具。`
             });
             
-            // 设置下一轮的提示
-            currentPrompt = '请基于工具执行结果继续回答或执行下一步操作。';
+            // 最后一次调用，不使用工具，让LLM基于结果生成最终回答
+            console.log('🔄 工具执行完成，生成最终回答');
+            console.time('🔄 最终回答生成');
+            
+            // 使用callModelWithoutTools来禁用工具调用
+            const finalResponse = await this.callModelWithoutTools(
+              providerId,
+              modelId,
+              '请基于工具执行结果回答用户的问题，不要再次调用工具。',
+              conversationHistory
+            );
+            console.timeEnd('🔄 最终回答生成');
+            
+            console.log('🔄 最终回答响应:', {
+              hasText: !!finalResponse.result?.text,
+              hasToolCalls: !!finalResponse.result?.toolCalls,
+              toolCallsCount: finalResponse.result?.toolCalls?.length || 0
+            });
+            
+            // 处理最终回答
+            if (finalResponse.result?.text) {
+              console.log('🔄 最终回答文本:', finalResponse.result.text.substring(0, 100) + '...');
+              onMessage?.(finalResponse.result.text);
+            }
+            
+            // 结束循环
+            console.log('✅ 对话完成，已生成最终回答');
+            return; // 直接返回，结束函数
+          } else {
+            // 没有成功的工具结果，结束循环
+            console.log('⚠️ 没有成功的工具结果，结束对话');
+            return; // 直接返回，结束函数
           }
         } else {
           // 没有工具调用，对话结束
           console.log('✅ 对话完成，没有更多工具调用');
-          break;
+          return; // 直接返回，结束函数
         }
       }
 
       if (loopCount >= maxLoops) {
         console.warn('⚠️ 达到最大循环次数，停止对话');
         onError?.(new Error('达到最大对话循环次数'));
+        return; // 直接返回，结束函数
       }
 
     } catch (error) {

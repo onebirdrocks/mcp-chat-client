@@ -7,7 +7,7 @@ import MarkdownRenderer from './MarkdownRenderer';
 import ReasoningSteps from './ReasoningSteps';
 import ToolCallStatus from './ToolCallStatus';
 import InlineToolCallConfirmation from './InlineToolCallConfirmation';
-import { ToolCall, ToolCallResult } from '@/lib/tool-call-client';
+import { ToolCall, ToolCallResult } from '@/lib/tool-call-client-simplified';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';

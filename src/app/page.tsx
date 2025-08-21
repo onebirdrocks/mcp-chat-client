@@ -185,7 +185,6 @@ export default function Home() {
           currentChat.providerId,
           currentChat.modelId,
           userMessage.content,
-          tools,
           messages // 传递历史消息
         );
         
@@ -404,20 +403,12 @@ export default function Home() {
         setMessages(prev => [...prev, aiResponseMessage]);
         
         // 继续对话，使用现有的工具结果（流式）
-        const response = await toolCallClientService.continueConversationWithToolResultsStream(
+        const response = await toolCallClientService.continueConversationWithToolResults(
           currentChat!.providerId,
           currentChat!.modelId,
           currentPrompt,
-          message!.toolResults!,
           messages, // 传递历史消息
-          (chunk) => {
-            // 实时更新AI回复内容
-            setMessages(prev => prev.map(m => 
-              m.id === aiResponseMessageId 
-                ? { ...m, content: m.content + chunk }
-                : m
-            ));
-          }
+          message!.toolResults!
         );
         
         // 更新工具调用消息的状态
@@ -463,8 +454,8 @@ export default function Home() {
           currentChat!.providerId,
           currentChat!.modelId,
           currentPrompt,
-          results,
-          messages // 传递历史消息
+          messages, // 传递历史消息
+          results
         );
         
         // 更新工具调用消息的状态和结果
@@ -521,9 +512,9 @@ export default function Home() {
           : m
       ));
       
-      console.log(`Tool ${toolCall.name} executed successfully`);
+      console.log(`Tool ${toolCall.toolName} executed successfully`);
     } catch (error) {
-      console.error(`Error executing tool ${toolCall.name}:`, error);
+      console.error(`Error executing tool ${toolCall.toolName}:`, error);
       
       // 更新消息的工具结果（包含错误）
       setMessages(prev => prev.map(m => 
@@ -589,21 +580,20 @@ export default function Home() {
       setMessages(prev => [...prev, aiResponseMessage]);
       
       // 继续对话（流式）
-      const response = await toolCallClientService.continueConversationWithToolResultsStream(
+      const response = await toolCallClientService.continueConversationWithToolResults(
         currentChat!.providerId,
         currentChat!.modelId,
         currentPrompt,
-        results,
         messages, // 传递历史消息
-        (chunk) => {
-          // 实时更新AI回复内容
-          setMessages(prev => prev.map(m => 
-            m.id === aiResponseMessageId 
-              ? { ...m, content: m.content + chunk }
-              : m
-          ));
-        }
+        results
       );
+      
+      // 实时更新AI回复内容
+      setMessages(prev => prev.map(m => 
+        m.id === aiResponseMessageId 
+          ? { ...m, content: response }
+          : m
+      ));
       
       // 更新工具调用消息的状态和结果
       setMessages(prev => prev.map(m => 
